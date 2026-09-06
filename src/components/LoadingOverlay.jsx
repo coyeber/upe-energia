@@ -3,7 +3,7 @@ import { BrainCircuit, CheckCircle2, FileSearch, ScanLine, ShieldCheck, Sparkles
 const steps = [
   { id: 'reading', label: 'Lendo o PDF', icon: FileSearch },
   { id: 'ocr', label: 'Reconhecendo texto', icon: ScanLine },
-  { id: 'ai', label: 'Analisando com Gemini', icon: BrainCircuit },
+  { id: 'ai', label: 'Analisando dados', icon: BrainCircuit },
   { id: 'validating', label: 'Validando indicadores', icon: ShieldCheck }
 ]
 
@@ -20,8 +20,8 @@ export default function LoadingOverlay({ open, stage = 'reading', progress = 0, 
         <span className="loading-spark ls1"/><span className="loading-spark ls2"/><span className="loading-spark ls3"/>
       </div>
       <div className="text-center mt-5">
-        <div className="label !text-blue-200 inline-flex items-center gap-2"><Sparkles size={13}/> UPE Energia • Processamento inteligente</div>
-        <h2 className="text-2xl md:text-3xl font-black text-white mt-2">Transformando a fatura em inteligência</h2>
+        <div className="label !text-blue-200 inline-flex items-center gap-2"><Sparkles size={13}/> UPE Energia • Processamento em andamento</div>
+        <h2 className="text-2xl md:text-3xl font-black text-white mt-2">Transformando a fatura em indicadores</h2>
         <p className="text-blue-100/80 mt-2 text-sm md:text-base">{message || 'Aguarde enquanto preparamos a análise.'}</p>
       </div>
       <div className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-2.5">
@@ -31,7 +31,7 @@ export default function LoadingOverlay({ open, stage = 'reading', progress = 0, 
         <div className="flex justify-between text-xs text-blue-100/70 mb-2"><span>Fluxo de processamento</span><span>{Math.round(progress)}%</span></div>
         <div className="loading-progress electric-loading-progress"><div className="loading-progress-bar" style={{width:`${Math.max(4,Math.min(100,progress))}%`}}><i/></div></div>
       </div>
-      <div className="loading-security"><ShieldCheck size={14}/>O PDF original permanece no navegador. Apenas o texto extraído é enviado ao Gemini.</div>
+      <div className="loading-security"><ShieldCheck size={14}/>O PDF original permanece no navegador. Apenas o texto extraído é enviado ao serviço de análise.</div>
     </div>
   </div>
 }

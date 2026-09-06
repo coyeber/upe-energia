@@ -1,6 +1,6 @@
-# UPE Energia — Gemini V8 Electric Premium
+# UPE Energia — V8 Electric Premium
 
-Dashboard institucional de análise energética da Universidade de Pernambuco, com identidade visual UPE, Google Gemini via backend seguro do Vercel, PDF.js, OCR de fallback e persistência local.
+Dashboard institucional de análise energética da Universidade de Pernambuco, com identidade visual UPE, serviço de análise via backend seguro do Vercel, PDF.js, OCR de fallback e persistência local.
 
 ## Destaques da V8
 
@@ -25,7 +25,7 @@ GEMINI_API_KEY=sua_chave
 Modelo (use o modelo válido configurado na sua conta):
 
 ```env
-GEMINI_MODEL=seu_modelo_gemini
+GEMINI_MODEL=seu_modelo_configurado
 ```
 
 Depois de alterar variáveis, faça um novo deploy.
@@ -41,4 +41,4 @@ Abra o endereço informado pelo Vercel CLI, normalmente `http://localhost:3000`.
 
 ## Segurança
 
-A chave Gemini permanece apenas no backend. O PDF original é processado no navegador; apenas o texto extraído é enviado ao endpoint de análise.
+A chave do serviço permanece apenas no backend. O PDF original é processado no navegador; apenas o texto extraído é enviado ao endpoint de análise.

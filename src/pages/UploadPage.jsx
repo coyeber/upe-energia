@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CheckCircle2, FileText, FileUp, ScanLine, ShieldCheck, Sparkles, WandSparkles } from 'lucide-react'
 import { extractPdfText } from '../services/pdf'
 import { ocrPdf } from '../services/ocr'
-import { analyzeWithGemini } from '../services/gemini'
+import { analyzeWithAnalysisService } from '../services/analysisService'
 import ReviewForm from '../components/ReviewForm'
 import LoadingOverlay from '../components/LoadingOverlay'
 
@@ -25,9 +25,9 @@ export default function UploadPage({onSaved}){
       text=await ocrPdf(file,p=>setProgress(45+Math.min(25,p*.25)))
     }
     if(text.replace(/\s/g,'').length<100) throw new Error('Não foi possível extrair texto suficiente desta conta.')
-    setState('ai');setProgress(72);setMsg('O Google Gemini está identificando consumo, gastos, dias, histórico e indicadores técnicos...')
+    setState('ai');setProgress(72);setMsg('O sistema está identificando consumo, gastos, dias, histórico e indicadores técnicos...')
     ticker=setInterval(()=>setProgress(p=>Math.min(92,p+1.1)),450)
-    const response=await analyzeWithGemini(text)
+    const response=await analyzeWithAnalysisService(text)
     clearInterval(ticker)
     setState('validating');setProgress(96);setMsg('Validando kWh, kW, datas, valores e consistência do histórico...')
     await new Promise(r=>setTimeout(r,650))
@@ -38,7 +38,7 @@ export default function UploadPage({onSaved}){
  const busy=['reading','ocr','ai','validating'].includes(state)
  return <div className="space-y-5 page-enter">
   <LoadingOverlay open={busy} stage={state} progress={progress} message={msg}/>
-  <section className="upload-hero animate-enter"><div className="hero-grid"/><div className="relative z-10"><div className="hero-kicker"><WandSparkles size={14}/>Nova análise inteligente</div><h1>Envie uma conta de energia</h1><p>O sistema extrai o texto do PDF, usa OCR quando necessário e pede ao Gemini uma leitura estruturada para o dashboard institucional.</p><div className="upload-trust"><span><ShieldCheck size={15}/>PDF original não é armazenado</span><span><CheckCircle2 size={15}/>kWh e kW separados</span><span><Sparkles size={15}/>Conferência antes de salvar</span></div></div></section>
+  <section className="upload-hero animate-enter"><div className="hero-grid"/><div className="relative z-10"><div className="hero-kicker"><WandSparkles size={14}/>Nova análise detalhada</div><h1>Envie uma conta de energia</h1><p>O sistema extrai o texto do PDF, usa OCR quando necessário e organiza automaticamente os dados para o dashboard institucional.</p><div className="upload-trust"><span><ShieldCheck size={15}/>PDF original não é armazenado</span><span><CheckCircle2 size={15}/>kWh e kW separados</span><span><Sparkles size={15}/>Conferência antes de salvar</span></div></div></section>
 
   {!result&&<section className="card upload-card animate-enter delay-1">
     <label className={`drop-zone ${file?'has-file':''}`}>
@@ -49,9 +49,9 @@ export default function UploadPage({onSaved}){
       {file&&<div className="file-ready"><CheckCircle2 size={15}/>Arquivo carregado</div>}
     </label>
 
-    {state==='error'&&<div className="error-panel"><div><ScanLine size={20}/></div><section><strong>Não foi possível concluir a análise</strong><p>{msg}</p><small>Se o erro vier da API, verifique GEMINI_API_KEY, GEMINI_MODEL e faça um novo deploy no Vercel.</small></section></div>}
+    {state==='error'&&<div className="error-panel"><div><ScanLine size={20}/></div><section><strong>Não foi possível concluir a análise</strong><p>{msg}</p><small>Se o erro vier do serviço de análise, verifique as variáveis de ambiente e faça um novo deploy no Vercel.</small></section></div>}
 
-    <div className="upload-actions"><div className="upload-security"><ShieldCheck size={16}/><span>Apenas o texto extraído é enviado ao backend seguro do Vercel.</span></div><button className="btn-red btn-large" disabled={!file||busy} onClick={run}><Sparkles size={19}/>{busy?'Processando...':'Analisar conta com Gemini'}</button></div>
+    <div className="upload-actions"><div className="upload-security"><ShieldCheck size={16}/><span>Apenas o texto extraído é enviado ao backend seguro do Vercel.</span></div><button className="btn-red btn-large" disabled={!file||busy} onClick={run}><Sparkles size={19}/>{busy?'Processando...':'Analisar conta'}</button></div>
   </section>}
 
   {result&&<ReviewForm data={result} fileName={file?.name} provider={meta.provider} model={meta.model} onSave={onSaved}/>} 

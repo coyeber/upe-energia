@@ -2,7 +2,7 @@ function normalizeModel(value){ return String(value || 'gemini-2.5-flash').trim(
 export default function handler(req, res) {
   res.status(200).json({
     ok: true,
-    provider: 'Google Gemini',
+    provider: 'Serviço de análise',
     model: normalizeModel(process.env.GEMINI_MODEL),
     apiKeyConfigured: Boolean(process.env.GEMINI_API_KEY),
     version: '7.0-premium'

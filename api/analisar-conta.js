@@ -68,7 +68,7 @@ function safeJson(value = '') {
   try { return JSON.parse(clean) } catch {}
   const first = clean.indexOf('{'), last = clean.lastIndexOf('}')
   if (first >= 0 && last > first) return JSON.parse(clean.slice(first, last + 1))
-  throw new Error('O Gemini não retornou JSON válido.')
+  throw new Error('O serviço de análise não retornou JSON válido.')
 }
 
 function normalizeModel(value) {
@@ -157,23 +157,23 @@ ${texto}`
 
     if (!response.ok) {
       const detail = payload?.error?.message || payload?.message || payload?.raw || `HTTP ${response.status}`
-      console.error('Gemini API error:', response.status, detail)
-      return res.status(response.status).json({ error: `Google Gemini (HTTP ${response.status}): ${detail}`, code: payload?.error?.status || `HTTP_${response.status}` })
+      console.error('Erro do serviço de análise:', response.status, detail)
+      return res.status(response.status).json({ error: `Serviço de análise (HTTP ${response.status}): ${detail}`, code: payload?.error?.status || `HTTP_${response.status}` })
     }
 
     const finishReason = payload?.candidates?.[0]?.finishReason
-    if (finishReason && finishReason !== 'STOP') return res.status(502).json({ error: `O Gemini encerrou a resposta antes de concluir (${finishReason}). Tente novamente.` })
+    if (finishReason && finishReason !== 'STOP') return res.status(502).json({ error: `O serviço de análise encerrou a resposta antes de concluir (${finishReason}). Tente novamente.` })
 
     const content = extractText(payload)
     if (!content) {
       const reason = payload?.promptFeedback?.blockReason
-      return res.status(502).json({ error: reason ? `O Gemini bloqueou a solicitação (${reason}).` : 'O Gemini não retornou conteúdo analisável.' })
+      return res.status(502).json({ error: reason ? `O serviço de análise bloqueou a solicitação (${reason}).` : 'O serviço de análise não retornou conteúdo analisável.' })
     }
 
     const parsed = safeJson(content)
-    return res.status(200).json({ ok: true, provider: 'Google Gemini', model, data: normalize(parsed) })
+    return res.status(200).json({ ok: true, provider: 'Serviço de análise', model, data: normalize(parsed) })
   } catch (error) {
-    console.error('Erro Gemini:', error)
-    return res.status(500).json({ error: `Erro interno ao consultar o Gemini: ${error?.message || 'erro desconhecido'}` })
+    console.error('Erro no serviço de análise:', error)
+    return res.status(500).json({ error: `Erro interno ao consultar o serviço de análise: ${error?.message || 'erro desconhecido'}` })
   }
 }
