@@ -1,35 +1,27 @@
-# UPE Energia — NVIDIA Nemotron V5
+# UPE Energia — Google Gemini V6
 
-Dashboard acadêmico para análise de contas de energia da Universidade de Pernambuco (UPE), com identidade visual azul, branca e vermelha e análise via NVIDIA NIM / Nemotron.
+Dashboard acadêmico para análise de contas de energia da Universidade de Pernambuco (UPE), com identidade visual azul, branca e vermelha e análise de faturas via Google Gemini.
 
-## Fluxo
+## Arquitetura
 
-PDF → pdf.js → OCR local (se necessário) → `/api/analisar-conta` → NVIDIA Nemotron → conferência → localStorage → dashboard.
+PDF → pdf.js → OCR local (se necessário) → `/api/analisar-conta` → Google Gemini → conferência → localStorage → dashboard.
 
-A chave da NVIDIA fica **somente no backend**. Não coloque a chave em arquivos dentro de `src/`.
+O PDF original não é enviado ao Gemini. O navegador extrai o texto e envia somente esse texto ao backend do Vercel.
 
-## 1) NVIDIA API
+## Variáveis no Vercel
 
-No NVIDIA Build, gere uma API Key para o modelo Nemotron. Este projeto está configurado para:
-
-- URL: `https://integrate.api.nvidia.com/v1/chat/completions`
-- Modelo: `nvidia/nemotron-3.5-lightning-30b-a3b`
-
-## 2) Configurar no Vercel
-
-Project → Settings → Environment Variables:
+Em **Project → Settings → Environment Variables**, adicione:
 
 ```text
-NVIDIA_API_KEY = nvapi-xxxxxxxxxxxxxxxx
-NVIDIA_MODEL = nvidia/nemotron-3.5-lightning-30b-a3b
-NVIDIA_API_URL = https://integrate.api.nvidia.com/v1/chat/completions
+GEMINI_API_KEY = SUA_CHAVE_DO_GOOGLE_AI_STUDIO
+GEMINI_MODEL = gemini-2.5-flash
 ```
 
-`NVIDIA_MODEL` e `NVIDIA_API_URL` são opcionais porque o código já possui esses valores como padrão. A única variável obrigatória é `NVIDIA_API_KEY`.
+`GEMINI_MODEL` é opcional. O projeto usa `gemini-2.5-flash` como padrão.
 
-Depois faça **Redeploy**.
+Depois de alterar as variáveis, faça **Redeploy**.
 
-### Teste do backend
+## Teste do backend
 
 Abra:
 
@@ -37,69 +29,39 @@ Abra:
 https://SEU-SITE.vercel.app/api/health
 ```
 
-O esperado é:
+Resultado esperado:
 
 ```json
 {
   "ok": true,
-  "provider": "NVIDIA NIM",
-  "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "provider": "Google Gemini",
+  "model": "gemini-2.5-flash",
   "apiKeyConfigured": true
 }
 ```
 
-## 3) Testar localmente
-
-O Vite sozinho não executa as Vercel Functions. A maneira mais fiel é usar Vercel CLI:
+## Rodar no VS Code
 
 ```bash
 npm install
-npm i -g vercel
-cp .env.example .env.local
-```
-
-Coloque sua chave em `.env.local` e execute:
-
-```bash
+npm install -g vercel
 vercel dev
 ```
 
-Normalmente abrirá em `http://localhost:3000`.
-
-## Funcionalidades
-
-- Upload de PDF.
-- Extração de texto com pdf.js.
-- OCR local com Tesseract.js quando o PDF tiver pouco texto selecionável.
-- Extração por NVIDIA Nemotron.
-- Conferência manual antes de salvar.
-- Consumo em kWh separado de demanda em kW.
-- Filtros mensal/anual.
-- Gastos e média histórica.
-- Histórico de consumo da própria fatura.
-- Consumo x média.
-- Consumo x demanda.
-- Custo médio por kWh.
-- Simulador de economia de 5% a 30%.
-- Projeção de economia anual.
-- Ranking de meses críticos.
-- Componentes da fatura.
-- Diagnóstico de possíveis causas.
-- Plano de ações e oportunidades de economia.
-- Alertas de demanda quando existirem dados suficientes.
-- Histórico em localStorage.
+Para desenvolvimento local, copie `.env.example` para `.env.local` e coloque uma chave válida.
 
 ## Segurança
 
-Nunca use `VITE_NVIDIA_API_KEY`. Variáveis `VITE_*` são expostas ao navegador. A chave deve ser `NVIDIA_API_KEY` e usada somente nas funções em `/api`.
+Nunca use `VITE_GEMINI_API_KEY`. Variáveis `VITE_*` são expostas no navegador. A chave deve ser `GEMINI_API_KEY` e usada somente nas funções em `/api`.
 
-## Correção para `vercel dev`
+## Recursos
 
-Esta versão remove o proxy `/api -> localhost:3000` do Vite e o rewrite global para `index.html`, pois ambos interferem no servidor local do Vercel. Para testar localmente:
-
-```bash
-npm install
-vercel dev
-```
-
-Acesse a URL indicada pelo terminal e depois `/api/health`.
+- Upload de PDF e extração com pdf.js.
+- OCR local como fallback.
+- Análise por Google Gemini.
+- Validação separada de kWh e kW.
+- Consumo, demanda, valor e média histórica.
+- Histórico mensal da própria fatura quando disponível.
+- Diagnóstico, alertas e recomendações de economia.
+- Simulações e dashboard mensal/anual.
+- Persistência em localStorage.
