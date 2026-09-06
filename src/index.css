@@ -52,3 +52,103 @@
 @media(max-width:460px){.metric-card{min-height:136px}.report-kpis{grid-template-columns:1fr}.review-summary{grid-template-columns:1fr}.loading-step{padding:8px 6px}.loading-step-icon{display:none}.history-stats{padding-left:0}.period-tabs{width:100%}.period-tabs button{flex:1;padding:8px 8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 @media print{body{background:#fff}.topbar,.sidebar-premium,.site-footer,.system-alert,.print-hide{display:none!important}.main-layout{display:block!important;max-width:none;padding:0}.report-page{padding:0}.card,.report-kpi{box-shadow:none;break-inside:avoid}.report-hero{background:#123b73!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* =========================================================
+   UPE ENERGIA V8 — ELECTRIC PREMIUM MOTION SYSTEM
+   ========================================================= */
+:root{--electric-blue:#2e75ff;--electric-cyan:#73d8ff;--electric-red:#ff3145;--electric-navy:#071d3c;--electric-glow:0 0 30px rgba(46,117,255,.28)}
+
+/* ambient electric background */
+.electric-backdrop{position:fixed;inset:78px 0 0;z-index:-1;overflow:hidden;pointer-events:none;opacity:.8}
+.electric-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(18,59,115,.026) 1px,transparent 1px),linear-gradient(90deg,rgba(18,59,115,.026) 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.5),transparent 80%)}
+.energy-aurora{position:absolute;border-radius:50%;filter:blur(20px);opacity:.28;animation:auroraFloat 12s ease-in-out infinite}
+.energy-aurora-a{width:420px;height:420px;right:-150px;top:8%;background:radial-gradient(circle,rgba(46,117,255,.18),transparent 67%)}
+.energy-aurora-b{width:360px;height:360px;left:-160px;top:46%;background:radial-gradient(circle,rgba(237,28,46,.12),transparent 67%);animation-delay:-5s}
+.energy-line{position:absolute;height:1px;background:linear-gradient(90deg,transparent,rgba(46,117,255,.18),transparent);transform:rotate(-9deg);transform-origin:left center;animation:energyLineDrift 9s ease-in-out infinite}
+.energy-line-a{width:62%;top:22%;left:20%}.energy-line-b{width:48%;top:67%;left:8%;animation-delay:-4s;transform:rotate(6deg)}
+.energy-line i{position:absolute;top:-2px;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 10px rgba(46,117,255,.95),0 0 20px rgba(46,117,255,.45);animation:energyPacket 5s linear infinite}
+.energy-line i:nth-child(2){animation-delay:-1.8s}.energy-line i:nth-child(3){animation-delay:-3.3s}
+.energy-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:rgba(46,117,255,.7);box-shadow:0 0 12px rgba(46,117,255,.4);animation:particleFloat 8s ease-in-out infinite}
+.energy-particle.p1{left:10%;top:20%}.energy-particle.p2{left:32%;top:78%;animation-delay:-2s}.energy-particle.p3{right:8%;top:38%;animation-delay:-5s}.energy-particle.p4{right:26%;top:74%;background:rgba(237,28,46,.62);animation-delay:-1s}.energy-particle.p5{left:54%;top:10%;animation-delay:-3.5s}.energy-particle.p6{left:72%;top:58%;animation-delay:-6s}
+
+/* richer topbar */
+.topbar{overflow:hidden}.topbar-energy-flow{position:absolute;inset:0 auto 0 -30%;width:30%;background:linear-gradient(90deg,transparent,rgba(46,117,255,.035),rgba(255,255,255,.35),rgba(237,28,46,.025),transparent);transform:skewX(-24deg);animation:topbarSweep 8s ease-in-out infinite;pointer-events:none}
+.topbar-brand img{transition:transform .25s ease,filter .25s ease}.topbar-brand:hover img{transform:translateY(-1px) scale(1.03);filter:drop-shadow(0 7px 12px rgba(18,59,115,.12))}
+.live-energy{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:linear-gradient(180deg,#f2fbf7,#eef8f5);border:1px solid #cdebdc;color:#247050;font-size:.68rem;font-weight:850}.live-energy i{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.35);animation:livePulse 1.8s infinite}
+.topbar-red{position:relative;overflow:hidden}.topbar-red:after{content:"";position:absolute;inset:0;width:26%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);animation:railSweep 4.5s ease-in-out infinite}
+
+/* global interaction polish */
+.card,.premium-card,.metric-card,.report-kpi,.history-item{position:relative;isolation:isolate;transition:transform .24s cubic-bezier(.2,.7,.2,1),box-shadow .24s ease,border-color .24s ease}
+.card:after,.premium-card:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(120deg,transparent 22%,rgba(46,117,255,.035) 44%,rgba(255,255,255,.5) 50%,transparent 60%);transform:translateX(-115%);transition:transform .65s ease;z-index:-1}
+.card:hover,.premium-card:hover{transform:translateY(-2px);box-shadow:0 20px 46px rgba(18,59,115,.09);border-color:#cfdeee}.card:hover:after,.premium-card:hover:after{transform:translateX(115%)}
+.metric-card:hover,.report-kpi:hover{transform:translateY(-3px);box-shadow:0 18px 36px rgba(18,59,115,.09)}
+.btn-primary,.btn-red,.btn-secondary{position:relative;overflow:hidden}.btn-primary:after,.btn-red:after{content:"";position:absolute;top:-30%;bottom:-30%;width:38%;left:-55%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.36),transparent);transform:skewX(-20deg);transition:left .55s ease}.btn-primary:hover:after,.btn-red:hover:after{left:120%}
+.sidebar-premium{overflow:hidden}.sidebar-premium:before{content:"";position:absolute;top:0;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,rgba(46,117,255,.35),rgba(237,28,46,.18),transparent)}
+.sidebar-premium nav button.active{box-shadow:inset 0 0 0 1px rgba(46,117,255,.035)}.sidebar-premium nav button.active:after{content:"";position:absolute;right:10px;width:5px;height:5px;border-radius:50%;background:#2e75ff;box-shadow:0 0 0 5px rgba(46,117,255,.07),0 0 14px rgba(46,117,255,.3);animation:navPulse 2s ease-in-out infinite}
+.page-switch{animation:pageElectricIn .5s cubic-bezier(.16,.8,.24,1) both}
+
+/* page hero energy treatment */
+.dashboard-hero:after,.upload-hero:after,.analysis-hero:after,.report-hero:after{content:"";position:absolute;width:420px;height:420px;border-radius:50%;right:-180px;top:-230px;border:1px solid rgba(255,255,255,.09);box-shadow:0 0 0 48px rgba(255,255,255,.025),0 0 0 96px rgba(255,255,255,.016);animation:heroOrbit 10s linear infinite;pointer-events:none}
+.dashboard-hero:before,.upload-hero:before,.analysis-hero:before,.report-hero:before{content:"";position:absolute;left:-15%;bottom:-2px;width:55%;height:2px;background:linear-gradient(90deg,transparent,#73d8ff,rgba(255,255,255,.7),transparent);filter:drop-shadow(0 0 5px rgba(115,216,255,.45));animation:heroRail 6s ease-in-out infinite;pointer-events:none}
+
+/* Boot screen — lightning reactor */
+.boot-electric{background:radial-gradient(circle at 50% 35%,#123b73 0%,#082a55 45%,#041a36 100%)}
+.boot-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.026) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.026) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle at center,black,transparent 76%);animation:gridBreath 6s ease-in-out infinite}
+.boot-glow-blue{left:-240px!important;right:auto!important;top:35%!important;background:radial-gradient(circle,rgba(46,117,255,.21),transparent 67%)!important}
+.boot-bolt-trail{position:absolute;width:1px;height:240px;background:linear-gradient(to bottom,transparent,rgba(115,216,255,.5),transparent);filter:drop-shadow(0 0 7px rgba(115,216,255,.6));opacity:.5;animation:boltTrail 5s ease-in-out infinite}
+.trail-a{left:18%;top:10%;transform:rotate(36deg)}.trail-b{right:18%;bottom:6%;transform:rotate(-36deg);animation-delay:-2.2s}
+.electric-boot-card{width:min(720px,94vw);padding:28px 42px 40px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.11);border-radius:32px;box-shadow:0 28px 90px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(12px)}
+.boot-brand-lockup{display:flex;align-items:center;justify-content:center;gap:13px;margin-bottom:22px}.boot-brand-lockup img{width:86px;margin:0;background:#fff;border-radius:10px;padding:6px}.boot-brand-lockup>span{height:35px;width:1px;background:rgba(255,255,255,.18)}.boot-brand-lockup strong{display:block;text-align:left;font-size:.92rem;font-weight:950}.boot-brand-lockup small{display:block;text-align:left;color:#a9c4e5;font-size:.62rem;margin-top:2px}
+.lightning-reactor{position:relative;width:150px;height:150px;margin:0 auto 20px;display:grid;place-items:center}.reactor-core{position:relative;z-index:3;width:92px;height:92px;border-radius:30px;display:grid;place-items:center;color:#fff;background:radial-gradient(circle at 42% 30%,#4d8dff,#174f97 58%,#0b315f);box-shadow:0 0 0 1px rgba(255,255,255,.18),0 0 32px rgba(46,117,255,.55),0 0 72px rgba(46,117,255,.24);animation:coreCharge 1.8s ease-in-out infinite}
+.reactor-core:before{content:"";position:absolute;inset:8px;border-radius:23px;border:1px solid rgba(255,255,255,.12)}
+.reactor-orbit{position:absolute;border-radius:50%;border:1px solid rgba(115,216,255,.22)}.orbit-a{inset:8px;animation:spin 8s linear infinite}.orbit-b{inset:0;border-style:dashed;border-color:rgba(237,28,46,.23);animation:spinReverse 12s linear infinite}.reactor-orbit:before{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:#73d8ff;top:4px;left:50%;box-shadow:0 0 13px rgba(115,216,255,.85)}.orbit-b:before{background:#ff5162;box-shadow:0 0 12px rgba(255,49,69,.8);top:auto;bottom:6px}
+.reactor-spark{position:absolute;width:3px;height:18px;border-radius:999px;background:linear-gradient(#fff,#73d8ff,transparent);transform-origin:center 75px;opacity:.75;animation:sparkFlash 1.7s ease-in-out infinite}.s1{top:3px;left:74px}.s2{bottom:2px;right:32px;transform:rotate(145deg);animation-delay:-.5s}.s3{left:10px;top:55px;transform:rotate(-70deg);animation-delay:-1s}.s4{right:9px;top:49px;transform:rotate(70deg);animation-delay:-1.35s}
+.boot-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:rgba(115,216,255,.08);border:1px solid rgba(115,216,255,.14);color:#b9ddff;font-size:.66rem;font-weight:900;letter-spacing:.1em}
+.electric-boot-card h1{font-size:clamp(2rem,5vw,3.45rem);max-width:640px;margin:13px auto 0}.electric-boot-card p{max-width:590px}.boot-stage-row{display:flex;align-items:center;justify-content:space-between;margin-top:26px;color:#bdd4ee;font-size:.72rem}.boot-stage-row strong{color:#fff;font-size:.85rem}.electric-progress{height:8px;margin-top:8px;position:relative}.electric-progress span{width:auto;animation:none!important;background:linear-gradient(90deg,#4c92ff,#73d8ff 55%,#fff 74%,#ff5162);box-shadow:0 0 18px rgba(115,216,255,.4);transition:width .22s ease}.electric-progress:after{content:"";position:absolute;inset:-5px;border-radius:999px;border:1px solid rgba(115,216,255,.06)}
+.boot-tech-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}.boot-tech-row span{display:inline-flex;align-items:center;gap:5px;color:#a9c5e4;font-size:.62rem;padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055)}
+
+/* Processing overlay — electric current */
+.loading-electric{background:radial-gradient(circle at 50% 45%,rgba(18,59,115,.96),rgba(3,18,39,.98) 70%)}
+.loading-noise{position:absolute;inset:0;opacity:.22;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:36px 36px;animation:gridBreath 5s ease-in-out infinite}
+.loading-beam{position:absolute;width:1px;height:48vh;background:linear-gradient(to bottom,transparent,rgba(115,216,255,.55),transparent);filter:drop-shadow(0 0 7px rgba(115,216,255,.6));animation:beamFloat 5s ease-in-out infinite}.beam-a{left:18%;top:10%;transform:rotate(35deg)}.beam-b{right:18%;bottom:6%;transform:rotate(-35deg);animation-delay:-2.4s}
+.electric-loading-panel{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(12,45,84,.92),rgba(5,29,59,.94));border:1px solid rgba(115,216,255,.15);box-shadow:0 36px 100px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05)}
+.electric-loading-panel:before{content:"";position:absolute;top:0;left:-35%;width:32%;height:1px;background:linear-gradient(90deg,transparent,#73d8ff,#fff,transparent);animation:panelRail 4s linear infinite}
+.electric-orb-wrap{width:132px;height:132px}.electric-orb{background:radial-gradient(circle at 40% 30%,#4d8dff,#194d90 62%,#0a315e);color:white;box-shadow:0 0 34px rgba(46,117,255,.55),0 0 80px rgba(46,117,255,.2)}
+.electric-arc{position:absolute;border-radius:50%;border:1px solid transparent;border-top-color:rgba(115,216,255,.72);border-right-color:rgba(115,216,255,.2)}.arc-a{inset:1px;animation:spin 2.6s linear infinite}.arc-b{inset:11px;border-top-color:rgba(255,49,69,.65);animation:spinReverse 3.5s linear infinite}.arc-c{inset:21px;border-top-color:rgba(255,255,255,.5);animation:spin 5s linear infinite}.loading-spark{position:absolute;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(115,216,255,.8);animation:sparkOrbit 2.8s linear infinite}.ls1{top:12px;left:64px}.ls2{bottom:16px;right:20px;animation-delay:-1s}.ls3{left:14px;top:70px;animation-delay:-1.8s}
+.loading-step{position:relative;overflow:hidden}.loading-step.active{box-shadow:inset 0 0 0 1px rgba(115,216,255,.12),0 0 22px rgba(46,117,255,.08)}.step-energy{position:absolute;left:-30%;bottom:0;width:30%;height:2px;background:linear-gradient(90deg,transparent,#73d8ff,#fff,transparent);animation:stepFlow 1.8s linear infinite}
+.electric-loading-progress{height:9px;overflow:visible;background:rgba(255,255,255,.08)}.electric-loading-progress .loading-progress-bar{position:relative;background:linear-gradient(90deg,#347ef1,#73d8ff 60%,#fff);box-shadow:0 0 16px rgba(115,216,255,.32);transition:width .45s cubic-bezier(.2,.8,.2,1)}.electric-loading-progress .loading-progress-bar i{position:absolute;right:-4px;top:50%;width:8px;height:8px;border-radius:50%;transform:translateY(-50%);background:#fff;box-shadow:0 0 12px #73d8ff,0 0 24px rgba(115,216,255,.55);animation:progressNode 1s ease-in-out infinite}.loading-security{margin-top:18px;display:flex;align-items:center;justify-content:center;gap:7px;color:rgba(208,226,247,.7);font-size:.7rem}
+
+/* richer table/chart surfaces */
+.recharts-wrapper{filter:drop-shadow(0 4px 8px rgba(18,59,115,.018))}.recharts-cartesian-grid-horizontal line,.recharts-cartesian-grid-vertical line{stroke-dasharray:3 4}.recharts-line-curve{filter:drop-shadow(0 2px 3px rgba(18,59,115,.12))}
+.period-tabs button,.period-controls select{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.period-tabs button:hover,.period-controls select:hover{transform:translateY(-1px)}
+
+/* staggered reveal helpers automatically used by current classes */
+.animate-enter:nth-child(2){animation-delay:70ms}.animate-enter:nth-child(3){animation-delay:120ms}.animate-enter:nth-child(4){animation-delay:170ms}.animate-enter:nth-child(5){animation-delay:220ms}
+
+/* keyframes */
+@keyframes auroraFloat{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(28px,-24px,0) scale(1.08)}}
+@keyframes energyLineDrift{0%,100%{opacity:.22;transform:translateX(-1%) rotate(-9deg)}50%{opacity:.6;transform:translateX(3%) rotate(-7deg)}}
+@keyframes energyPacket{0%{left:0;opacity:0}8%{opacity:1}92%{opacity:1}100%{left:100%;opacity:0}}
+@keyframes particleFloat{0%,100%{transform:translateY(0) scale(.8);opacity:.25}50%{transform:translateY(-28px) scale(1.2);opacity:.8}}
+@keyframes topbarSweep{0%,55%{left:-35%}80%,100%{left:120%}}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.32)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+@keyframes railSweep{0%,45%{left:-35%}75%,100%{left:120%}}
+@keyframes navPulse{0%,100%{transform:scale(.8);opacity:.7}50%{transform:scale(1.15);opacity:1}}
+@keyframes pageElectricIn{0%{opacity:0;transform:translateY(10px) scale(.996);filter:blur(3px)}100%{opacity:1;transform:none;filter:none}}
+@keyframes heroOrbit{to{transform:rotate(360deg)}}
+@keyframes heroRail{0%,55%{transform:translateX(-25%);opacity:.2}75%{opacity:.9}100%{transform:translateX(230%);opacity:0}}
+@keyframes gridBreath{0%,100%{opacity:.4}50%{opacity:.75}}
+@keyframes boltTrail{0%,100%{opacity:.12;transform:translateY(-20px) rotate(36deg) scaleY(.8)}50%{opacity:.75;transform:translateY(22px) rotate(36deg) scaleY(1.1)}}
+@keyframes coreCharge{0%,100%{transform:scale(.97);box-shadow:0 0 0 1px rgba(255,255,255,.18),0 0 28px rgba(46,117,255,.48),0 0 60px rgba(46,117,255,.18)}50%{transform:scale(1.045);box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 42px rgba(115,216,255,.72),0 0 96px rgba(46,117,255,.28)}}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes spinReverse{to{transform:rotate(-360deg)}}
+@keyframes sparkFlash{0%,100%{opacity:.12;transform:scaleY(.5)}45%{opacity:.9;transform:scaleY(1.15)}60%{opacity:.25}}
+@keyframes beamFloat{0%,100%{opacity:.08;transform:translateY(-25px) rotate(35deg)}50%{opacity:.5;transform:translateY(25px) rotate(35deg)}}
+@keyframes panelRail{to{left:125%}}
+@keyframes sparkOrbit{0%{transform:rotate(0) translateX(4px);opacity:.2}50%{opacity:1}100%{transform:rotate(360deg) translateX(4px);opacity:.2}}
+@keyframes stepFlow{to{left:115%}}
+@keyframes progressNode{0%,100%{transform:translateY(-50%) scale(.8);opacity:.8}50%{transform:translateY(-50%) scale(1.3);opacity:1}}
+
+@media(max-width:980px){.live-energy{display:none}}
+@media(max-width:760px){.electric-boot-card{padding:24px 18px 30px;border-radius:24px}.boot-brand-lockup{margin-bottom:16px}.boot-brand-lockup img{width:72px}.lightning-reactor{width:128px;height:128px}.reactor-core{width:80px;height:80px;border-radius:26px}.boot-tech-row{gap:6px}.boot-tech-row span:nth-child(2){display:none}.electric-backdrop{inset:78px 0 0}.energy-line{opacity:.35}.loading-security{padding:0 8px;text-align:center}}
+@media(max-width:480px){.boot-brand-lockup>span,.boot-brand-lockup div{display:none}.electric-boot-card h1{font-size:1.9rem}.electric-boot-card p{font-size:.78rem}.boot-tech-row span:nth-child(3){display:none}.boot-stage-row{font-size:.65rem}.lightning-reactor{margin-bottom:14px}}
+@media(prefers-reduced-motion:reduce){.electric-backdrop,.boot-bolt-trail,.energy-line,.energy-particle,.topbar-energy-flow,.reactor-orbit,.reactor-spark,.loading-beam,.electric-arc,.loading-spark{display:none!important}}
