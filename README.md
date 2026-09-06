@@ -1,46 +1,53 @@
-# UPE Energia — Google Gemini V6
+# UPE Energia — Gemini V7 Premium
 
-Dashboard acadêmico para análise de contas de energia da Universidade de Pernambuco (UPE), com identidade visual azul, branca e vermelha e análise de faturas via Google Gemini.
+Dashboard acadêmico e institucional para análise de contas de energia da Universidade de Pernambuco (UPE).
 
-## Arquitetura
+## Principais recursos
 
-PDF → pdf.js → OCR local (se necessário) → `/api/analisar-conta` → Google Gemini → conferência → localStorage → dashboard.
+- Identidade visual UPE em azul, branco e vermelho.
+- Filtros de período: **Mês**, **Ano** e **Todos os anos**.
+- Consolidação do histórico mensal encontrado dentro das próprias faturas.
+- Indicadores de consumo, gasto, demanda, dias faturados, kWh/dia e custo efetivo por kWh.
+- Comparação com mês anterior, média histórica e ano anterior quando houver base.
+- Projeção anual simples e identificação de melhor/pior mês.
+- Gráficos de consumo, gasto, consumo diário normalizado e custo por kWh.
+- Separação rigorosa entre kWh e kW.
+- Diagnóstico técnico/financeiro com Gemini.
+- Simulador de meta de redução e economia potencial.
+- Relatório executivo imprimível/salvável em PDF pelo navegador.
+- Exportação do histórico em CSV e backup JSON.
+- Tela de carregamento por etapas, animações e validação antes de salvar.
+- PDF original permanece no navegador; apenas o texto extraído é enviado ao backend.
 
-O PDF original não é enviado ao Gemini. O navegador extrai o texto e envia somente esse texto ao backend do Vercel.
+## Vercel
 
-## Variáveis no Vercel
-
-Em **Project → Settings → Environment Variables**, adicione:
-
-```text
-GEMINI_API_KEY = SUA_CHAVE_DO_GOOGLE_AI_STUDIO
-GEMINI_MODEL = gemini-2.5-flash
-```
-
-`GEMINI_MODEL` é opcional. O projeto usa `gemini-2.5-flash` como padrão.
-
-Depois de alterar as variáveis, faça **Redeploy**.
-
-## Teste do backend
-
-Abra:
+Em **Settings → Environment Variables**, configure:
 
 ```text
-https://SEU-SITE.vercel.app/api/health
+GEMINI_API_KEY = sua chave
+GEMINI_MODEL   = modelo habilitado na sua conta
 ```
 
-Resultado esperado:
+Depois faça um novo **Redeploy**.
 
-```json
-{
-  "ok": true,
-  "provider": "Google Gemini",
-  "model": "gemini-2.5-flash",
-  "apiKeyConfigured": true
-}
+Teste:
+
+```text
+https://SEU-PROJETO.vercel.app/api/health
 ```
 
-## Rodar no VS Code
+O JSON deve indicar `apiKeyConfigured: true`.
+
+## Desenvolvimento local
+
+Crie `.env.local` na raiz:
+
+```env
+GEMINI_API_KEY=SUA_CHAVE
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Depois:
 
 ```bash
 npm install
@@ -48,20 +55,11 @@ npm install -g vercel
 vercel dev
 ```
 
-Para desenvolvimento local, copie `.env.example` para `.env.local` e coloque uma chave válida.
+Abra a URL exibida pelo Vercel CLI, normalmente `http://localhost:3000`.
 
-## Segurança
+## Observações de cálculo
 
-Nunca use `VITE_GEMINI_API_KEY`. Variáveis `VITE_*` são expostas no navegador. A chave deve ser `GEMINI_API_KEY` e usada somente nas funções em `/api`.
-
-## Recursos
-
-- Upload de PDF e extração com pdf.js.
-- OCR local como fallback.
-- Análise por Google Gemini.
-- Validação separada de kWh e kW.
-- Consumo, demanda, valor e média histórica.
-- Histórico mensal da própria fatura quando disponível.
-- Diagnóstico, alertas e recomendações de economia.
-- Simulações e dashboard mensal/anual.
-- Persistência em localStorage.
+- Valores anuais de gasto usam apenas meses em que uma fatura com valor foi efetivamente salva.
+- O histórico de consumo pode trazer meses extras existentes dentro de uma única fatura.
+- Projeções são matemáticas e não consideram reajustes, sazonalidade futura ou mudanças tarifárias.
+- O score de eficiência é heurístico e serve para priorização, não substituindo auditoria elétrica.

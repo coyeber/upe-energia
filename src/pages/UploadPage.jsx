@@ -1,42 +1,59 @@
 import { useState } from 'react'
-import { FileUp, Sparkles, FileText, AlertTriangle, CheckCircle2, ScanLine } from 'lucide-react'
+import { CheckCircle2, FileText, FileUp, ScanLine, ShieldCheck, Sparkles, WandSparkles } from 'lucide-react'
 import { extractPdfText } from '../services/pdf'
 import { ocrPdf } from '../services/ocr'
 import { analyzeWithGemini } from '../services/gemini'
 import ReviewForm from '../components/ReviewForm'
+import LoadingOverlay from '../components/LoadingOverlay'
 
 export default function UploadPage({onSaved}){
- const [file,setFile]=useState(null),[state,setState]=useState('idle'),[progress,setProgress]=useState(0),[msg,setMsg]=useState(''),[result,setResult]=useState(null),[meta,setMeta]=useState({})
+ const [file,setFile]=useState(null)
+ const [state,setState]=useState('idle')
+ const [progress,setProgress]=useState(0)
+ const [msg,setMsg]=useState('')
+ const [result,setResult]=useState(null)
+ const [meta,setMeta]=useState({})
+
  async function run(){
   if(!file) return
-  setState('reading');setProgress(0);setMsg('Extraindo texto do PDF...');setResult(null)
+  setState('reading');setProgress(4);setMsg('Lendo as páginas e extraindo o texto do PDF...');setResult(null)
+  let ticker
   try{
-    let text=await extractPdfText(file,setProgress)
-    if(text.replace(/\s/g,'').length<180){setState('ocr');setMsg('PDF com pouco texto. Ativando OCR local...');text=await ocrPdf(file,setProgress)}
+    let text=await extractPdfText(file,p=>setProgress(Math.max(6,Math.min(42,p*.42))))
+    if(text.replace(/\s/g,'').length<180){
+      setState('ocr');setProgress(45);setMsg('O PDF possui pouco texto selecionável. Ativando OCR local...')
+      text=await ocrPdf(file,p=>setProgress(45+Math.min(25,p*.25)))
+    }
     if(text.replace(/\s/g,'').length<100) throw new Error('Não foi possível extrair texto suficiente desta conta.')
-    setState('ai');setProgress(100);setMsg('Google Gemini está lendo, interpretando e diagnosticando a fatura...')
+    setState('ai');setProgress(72);setMsg('O Google Gemini está identificando consumo, gastos, dias, histórico e indicadores técnicos...')
+    ticker=setInterval(()=>setProgress(p=>Math.min(92,p+1.1)),450)
     const response=await analyzeWithGemini(text)
+    clearInterval(ticker)
+    setState('validating');setProgress(96);setMsg('Validando kWh, kW, datas, valores e consistência do histórico...')
+    await new Promise(r=>setTimeout(r,650))
+    setProgress(100)
     setMeta({provider:response.provider,model:response.model});setResult(response.data);setState('review');setMsg('')
-  }catch(e){setState('error');setMsg(e.message||'Falha ao analisar a conta.')}
+  }catch(e){ if(ticker)clearInterval(ticker);setState('error');setProgress(0);setMsg(e.message||'Falha ao analisar a conta.') }
  }
- const busy=['reading','ocr','ai'].includes(state)
- return <div className="space-y-5">
-  <section className="upe-gradient rounded-[24px] overflow-hidden text-white relative">
-   <div className="absolute right-0 top-0 h-full w-2 bg-[#ed1c2e]" />
-   <div className="p-6 md:p-8"><div className="text-blue-100 text-xs font-extrabold tracking-[.2em] uppercase">Nova análise</div><h1 className="text-3xl md:text-4xl font-black mt-2">Envie uma conta de energia</h1><p className="mt-3 max-w-2xl text-blue-50/90">O PDF é lido no navegador. Apenas o texto extraído é enviado ao Google Gemini pelo backend seguro do Vercel.</p></div>
-  </section>
-  {!result&&<section className="card p-5 md:p-7">
-    <label className="block border-2 border-dashed border-[#bfd0e5] rounded-2xl p-7 text-center hover:bg-blue-50/40 cursor-pointer">
-      <input type="file" accept="application/pdf" className="hidden" onChange={e=>{setFile(e.target.files?.[0]||null);setState('idle');setMsg('')}}/>
-      <div className="mx-auto h-14 w-14 rounded-2xl bg-[#eef4fb] text-[#123b73] flex items-center justify-center"><FileUp/></div>
-      <div className="font-extrabold mt-3">{file?file.name:'Clique para selecionar um PDF'}</div><div className="text-sm text-slate-500 mt-1">{file?`${(file.size/1024/1024).toFixed(2)} MB`:'Conta de energia em formato PDF'}</div>
+ const busy=['reading','ocr','ai','validating'].includes(state)
+ return <div className="space-y-5 page-enter">
+  <LoadingOverlay open={busy} stage={state} progress={progress} message={msg}/>
+  <section className="upload-hero animate-enter"><div className="hero-grid"/><div className="relative z-10"><div className="hero-kicker"><WandSparkles size={14}/>Nova análise inteligente</div><h1>Envie uma conta de energia</h1><p>O sistema extrai o texto do PDF, usa OCR quando necessário e pede ao Gemini uma leitura estruturada para o dashboard institucional.</p><div className="upload-trust"><span><ShieldCheck size={15}/>PDF original não é armazenado</span><span><CheckCircle2 size={15}/>kWh e kW separados</span><span><Sparkles size={15}/>Conferência antes de salvar</span></div></div></section>
+
+  {!result&&<section className="card upload-card animate-enter delay-1">
+    <label className={`drop-zone ${file?'has-file':''}`}>
+      <input type="file" accept="application/pdf" className="hidden" onChange={e=>{setFile(e.target.files?.[0]||null);setState('idle');setMsg('');setResult(null)}}/>
+      <div className="drop-icon">{file?<FileText size={26}/>:<FileUp size={26}/>}</div>
+      <div className="drop-title">{file?file.name:'Selecione ou arraste uma conta em PDF'}</div>
+      <div className="drop-subtitle">{file?`${(file.size/1024/1024).toFixed(2)} MB • pronto para análise`:'PDF nativo ou escaneado • OCR automático quando necessário'}</div>
+      {file&&<div className="file-ready"><CheckCircle2 size={15}/>Arquivo carregado</div>}
     </label>
-    {busy&&<div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-      <div className="flex gap-3 items-center"><div className="h-10 w-10 rounded-xl bg-[#123b73] text-white flex items-center justify-center animate-pulse">{state==='ocr'?<ScanLine size={19}/>:state==='ai'?<Sparkles size={19}/>:<FileText size={19}/>}</div><div className="flex-1"><div className="font-extrabold text-[#123b73]">{msg}</div><div className="h-2 bg-white rounded-full overflow-hidden mt-2"><div className="h-full bg-[#ed1c2e] transition-all" style={{width:`${state==='ai'?100:progress}%`}}/></div></div></div>
-    </div>}
-    {state==='error'&&<div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 flex gap-3"><AlertTriangle className="shrink-0"/><div><div className="font-extrabold">Não foi possível concluir a análise</div><div className="text-sm mt-1">{msg}</div></div></div>}
-    <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"><div className="text-xs text-slate-500 flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-600"/>kWh e kW são validados separadamente.</div><button className="btn-red" disabled={!file||busy} onClick={run}><Sparkles size={18}/>{busy?'Analisando...':'Analisar com Gemini'}</button></div>
+
+    {state==='error'&&<div className="error-panel"><div><ScanLine size={20}/></div><section><strong>Não foi possível concluir a análise</strong><p>{msg}</p><small>Se o erro vier da API, verifique GEMINI_API_KEY, GEMINI_MODEL e faça um novo deploy no Vercel.</small></section></div>}
+
+    <div className="upload-actions"><div className="upload-security"><ShieldCheck size={16}/><span>Apenas o texto extraído é enviado ao backend seguro do Vercel.</span></div><button className="btn-red btn-large" disabled={!file||busy} onClick={run}><Sparkles size={19}/>{busy?'Processando...':'Analisar conta com Gemini'}</button></div>
   </section>}
+
   {result&&<ReviewForm data={result} fileName={file?.name} provider={meta.provider} model={meta.model} onSave={onSaved}/>} 
  </div>
 }

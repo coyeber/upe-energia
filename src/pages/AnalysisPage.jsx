@@ -1,39 +1,69 @@
 import { useMemo, useState } from 'react'
-import { Lightbulb, AlertTriangle, PiggyBank, Activity, ReceiptText, ArrowDownRight, Building2, ShieldAlert, BadgeDollarSign, Target, BrainCircuit } from 'lucide-react'
-import { brl,num,monthLong } from '../utils/format'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts'
+import {
+  Activity, AlertTriangle, ArrowDownRight, BadgeDollarSign, BrainCircuit, Building2,
+  CalendarClock, CircleGauge, Clock3, Gauge, Leaf, Lightbulb, PiggyBank, ReceiptText,
+  ShieldAlert, Sparkles, Target, ThermometerSun, Wrench, Zap
+} from 'lucide-react'
+import { brl, num, monthLong, isoToBr, confidenceLabel } from '../utils/format'
+import { buildMonthlySeries, monthMetrics, average } from '../utils/analytics'
+
+const PIE=['#123b73','#ed1c2e','#16a34a','#f59e0b','#7c3aed','#0891b2','#64748b']
 
 export default function AnalysisPage({bills}){
+ const monthly=useMemo(()=>buildMonthlySeries(bills),[bills])
+ const [billId,setBillId]=useState(bills[0]?.id||'')
+ const current=bills.find(b=>b.id===billId)||bills[0]
  const [target,setTarget]=useState(10)
- const current=bills[0]
- const hist=useMemo(()=>current?.historico_consumo||[],[current])
- if(!current) return <div className="card p-10 text-center"><Lightbulb className="mx-auto text-[#123b73]" size={36}/><h2 className="text-xl font-extrabold mt-4">Nenhuma análise disponível</h2><p className="text-slate-500 mt-2">Envie uma conta para receber diagnóstico e recomendações.</p></div>
- const avg=hist.length?hist.reduce((s,x)=>s+(Number(x.kwh)||0),0)/hist.length:null
- const diff=avg&&current.consumo_kwh?((current.consumo_kwh-avg)/avg)*100:null
+ if(!current) return <div className="card p-12 text-center page-enter"><Lightbulb className="mx-auto text-[#123b73]" size={40}/><h2 className="text-2xl font-black mt-4">Nenhuma análise disponível</h2><p className="text-slate-500 mt-2">Envie uma conta para gerar o diagnóstico técnico e financeiro.</p></div>
+ const month=monthly.find(x=>x.mes===current.mes_referencia)
+ const metrics=monthMetrics(month,monthly)
+ const hist=current.historico_consumo||[]
+ const avg=average(hist.map(x=>x.kwh))
  const unitCost=current.valor_total&&current.consumo_kwh?current.valor_total/current.consumo_kwh:null
- const projected=current.valor_total?current.valor_total*(1-target/100):null
- const annualSaving=current.valor_total?current.valor_total*(target/100)*12:null
- const high=[...hist].sort((a,b)=>(b.kwh||0)-(a.kwh||0)).slice(0,3)
- const components=current.componentes_fatura||[]
- const diag=current.diagnostico||{}
+ const savingMonthly=current.valor_total?current.valor_total*target/100:null
+ const savingAnnual=savingMonthly?savingMonthly*12:null
+ const targetKwh=current.consumo_kwh?current.consumo_kwh*(1-target/100):null
  const demandExcess=current.demanda_kw!=null&&current.demanda_contratada_kw!=null?current.demanda_kw-current.demanda_contratada_kw:null
- const funcs=[
-  {icon:BadgeDollarSign,title:'1. Custo médio do kWh',value:unitCost?brl(unitCost):'Não calculável',text:'Relação entre o valor total da fatura e o consumo medido. Não representa necessariamente a tarifa regulatória pura.'},
-  {icon:Activity,title:'2. Comparação histórica',value:diff==null?'Sem base':`${Math.abs(diff).toFixed(1)}% ${diff>0?'acima':'abaixo'}`,text:'Compara o consumo atual com a média dos meses identificados no histórico da fatura.'},
-  {icon:Target,title:'3. Meta de redução',value:`${target}%`,text:projected?`Com essa meta, uma fatura semelhante cairia aproximadamente para ${brl(projected)}.`:'Defina uma meta para simular economia.'},
-  {icon:PiggyBank,title:'4. Economia anual simulada',value:annualSaving?brl(annualSaving):'—',text:'Projeção simples considerando a mesma redução durante 12 meses.'},
-  {icon:ArrowDownRight,title:'5. Consumo alvo',value:current.consumo_kwh?`${num(current.consumo_kwh*(1-target/100))} kWh`:'—',text:'Referência de consumo para atingir a meta escolhida.'},
-  {icon:ReceiptText,title:'6. Componentes da fatura',value:`${components.length} identificados`,text:'Separa itens como energia, TUSD, TE, bandeiras, impostos, iluminação pública e outros quando a fatura informa.'},
-  {icon:ShieldAlert,title:'7. Demanda contratada',value:current.demanda_contratada_kw?`${num(current.demanda_contratada_kw,1)} kW`:'Não disponível',text:demandExcess>0?`A demanda medida ficou ${num(demandExcess,1)} kW acima da contratada. Verifique cobrança por ultrapassagem na fatura.`:'O sistema não inventa demanda quando essa grandeza não aparece.'},
-  {icon:Building2,title:'8. Meses críticos',value:high.length?high.map(x=>`${x.mes}: ${num(x.kwh)} kWh`).join(' • '):'Sem histórico',text:'Ranking dos maiores consumos encontrados na própria conta.'},
-  {icon:AlertTriangle,title:'9. Alertas automáticos',value:`${(diag.alertas||[]).length} alerta(s)`,text:(diag.alertas||[])[0]||'O Gemini não sinalizou alertas específicos nesta fatura.'},
-  {icon:BrainCircuit,title:'10. Diagnóstico Gemini',value:current.confianca?.geral?`Confiança ${current.confianca.geral}`:'Analisado',text:diag.resumo||'O diagnóstico será gerado pela IA a partir dos dados identificados.'}
+ const diag=current.diagnostico||{}
+ const components=(current.componentes_fatura||[]).filter(x=>x.valor!=null&&x.valor>0)
+ const componentTotal=components.reduce((s,x)=>s+Number(x.valor||0),0)
+ const componentData=components.slice(0,7).map(x=>({name:x.nome,value:Number(x.valor)}))
+ const dailyGoal=targetKwh&&metrics?.dias?targetKwh/metrics.dias:null
+ const facts=[
+  {icon:BadgeDollarSign,title:'Custo efetivo por kWh',value:unitCost?`${brl(unitCost)}/kWh`:'Não calculável',text:'Valor total dividido pelo consumo. Inclui componentes da conta e não equivale à tarifa de energia isolada.'},
+  {icon:Activity,title:'Consumo diário',value:metrics?.consumoDiario?`${num(metrics.consumoDiario,2)} kWh/dia`:'Não disponível',text:`Normalizado por ${metrics?.dias||'—'} dias do ciclo para comparar faturas de durações diferentes.`},
+  {icon:CalendarClock,title:'Ciclo de faturamento',value:metrics?.dias?`${num(metrics.dias)} dias`:'Não informado',text:`Leitura: ${isoToBr(current.periodo_leitura_inicio)} → ${isoToBr(current.periodo_leitura_fim)}.`},
+  {icon:Target,title:'Meta de consumo',value:targetKwh?`${num(targetKwh)} kWh`:'—',text:dailyGoal?`Meta operacional aproximada de ${num(dailyGoal,2)} kWh/dia.`:'A meta é calculada quando consumo e dias estão disponíveis.'},
+  {icon:PiggyBank,title:'Economia mensal simulada',value:brl(savingMonthly),text:`Simulação matemática de redução de ${target}% sobre uma fatura semelhante.`},
+  {icon:Leaf,title:'Economia anual simulada',value:brl(savingAnnual),text:'Projeção simples para 12 meses. Não considera reajustes, sazonalidade ou mudanças tarifárias.'},
+  {icon:Gauge,title:'Demanda medida',value:current.demanda_kw!=null?`${num(current.demanda_kw,1)} kW`:'Não informada',text:current.demanda_kw==null?'O painel não cria demanda a partir do consumo em kWh.':current.demanda_contratada_kw==null?'Demanda contratada não localizada na fatura.':`Contrato informado: ${num(current.demanda_contratada_kw,1)} kW.`},
+  {icon:ShieldAlert,title:'Risco de ultrapassagem',value:demandExcess==null?'Sem base':demandExcess>0?`${num(demandExcess,1)} kW acima`:'Dentro do contratado',text:demandExcess>0?'Verifique se há cobrança explícita de ultrapassagem antes de concluir que existe multa.':'A análise depende de demanda medida e contratada.'},
+  {icon:ReceiptText,title:'Componentes identificados',value:`${components.length} item(ns)`,text:componentTotal?`${brl(componentTotal)} somados nos componentes que o Gemini conseguiu identificar.`:'A fatura não trouxe detalhamento monetário confiável.'},
+  {icon:Building2,title:'Histórico encontrado',value:`${hist.length} mês(es)`,text:avg?`Média histórica extraída: ${num(avg)} kWh/mês.`:'Sem histórico mensal suficiente.'},
+  {icon:CircleGauge,title:'Variação vs. mês anterior',value:metrics?.prevChange==null?'Sem base':`${Math.abs(metrics.prevChange).toFixed(1)}% ${metrics.prevChange>0?'↑':'↓'}`,text:'Compara o consumo, não o valor da fatura.'},
+  {icon:BrainCircuit,title:'Confiança da IA',value:confidenceLabel(current.confianca?.geral),text:(current.confianca?.observacoes||[])[0]||'Confira os campos antes de tomar decisões operacionais.'}
  ]
- return <div className="space-y-5">
-  <section className="upe-gradient text-white rounded-[24px] p-6 md:p-8 relative overflow-hidden"><div className="absolute left-0 bottom-0 h-1 w-full bg-[#ed1c2e]"/><div className="label !text-blue-100">Inteligência energética</div><h1 className="text-3xl font-black mt-2">Análises e oportunidades de economia</h1><p className="mt-3 text-blue-100 max-w-3xl">A IA interpreta a fatura; os cálculos do painel transformam os dados em indicadores para apoiar decisões. Recomendações não substituem uma auditoria elétrica em campo.</p></section>
-  <section className="card p-5"><div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between"><div><div className="label">Simulador de economia</div><div className="font-extrabold text-lg mt-1">Quanto podemos reduzir?</div></div><div className="flex items-center gap-3"><input type="range" min="5" max="30" step="5" value={target} onChange={e=>setTarget(Number(e.target.value))} className="w-44 accent-[#ed1c2e]"/><span className="badge bg-red-50 text-[#ed1c2e]">{target}%</span></div></div></section>
-  <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{funcs.map(({icon:Icon,title,value,text})=><div className="card p-5" key={title}><div className="flex items-start justify-between gap-3"><div className="h-10 w-10 rounded-xl bg-[#eef4fb] text-[#123b73] flex items-center justify-center"><Icon size={19}/></div><span className="text-xs font-extrabold text-slate-400">{monthLong(current.mes_referencia)}</span></div><div className="font-extrabold mt-4">{title}</div><div className="text-xl font-black text-[#123b73] mt-2">{value}</div><p className="text-sm text-slate-500 mt-2 leading-relaxed">{text}</p></div>)}</section>
-  <section className="grid lg:grid-cols-2 gap-5"><div className="card p-5"><div className="label text-[#ed1c2e]">Possíveis causas</div><h3 className="font-extrabold text-lg mt-1">O que pode estar elevando os gastos</h3><div className="mt-4 space-y-3">{(diag.causas_provaveis||[]).length?(diag.causas_provaveis||[]).map((x,i)=><Bullet key={i} text={x}/>):<Bullet text="A fatura, sozinha, pode não provar a causa física do aumento. Compare horários de uso, climatização, ocupação e equipamentos."/>}</div></div><div className="card p-5"><div className="label text-emerald-700">Plano de ação</div><h3 className="font-extrabold text-lg mt-1">Como melhorar os gastos</h3><div className="mt-4 space-y-3">{[...(diag.acoes_prioritarias||[]),...(diag.oportunidades_economia||[])].slice(0,8).map((x,i)=><Bullet key={i} text={x} green/>)}{!(diag.acoes_prioritarias||[]).length&&<Bullet green text="Mapeie os maiores consumidores, estabeleça metas mensais e valide resultados com medições antes/depois."/>}</div></div></section>
-  <section className="card p-5"><div className="label">Composição identificada</div><h3 className="font-extrabold text-lg mt-1">Itens encontrados pelo Gemini</h3><div className="mt-4 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-slate-500 border-b"><th className="py-3">Item</th><th>Valor</th><th>Unidade</th></tr></thead><tbody>{components.length?components.map((c,i)=><tr key={i} className="border-b border-slate-100"><td className="py-3 font-bold">{c.nome}</td><td>{c.valor!=null?brl(c.valor):'—'}</td><td>{c.unidade||'—'}</td></tr>):<tr><td colSpan="3" className="py-5 text-slate-500">Nenhum componente detalhado foi identificado.</td></tr>}</tbody></table></div></section>
+ return <div className="space-y-5 page-enter">
+  <section className="analysis-hero"><div className="relative z-10"><div className="hero-kicker"><BrainCircuit size={14}/>Diagnóstico técnico e financeiro</div><h1>Análises e oportunidades de eficiência</h1><p>Indicadores calculados pelo sistema e interpretação do Gemini organizados para apoiar decisões de gestão energética.</p></div><div className="analysis-selector"><span>Conta analisada</span><select value={current.id} onChange={e=>setBillId(e.target.value)}>{bills.map(b=><option key={b.id} value={b.id}>{monthLong(b.mes_referencia)} • {b.unidade_consumidora||'UC não identificada'}</option>)}</select></div></section>
+
+  <section className="card simulator-card animate-enter"><div><div className="label text-[#ed1c2e]">Simulador de redução</div><h2 className="section-title">Defina uma meta e veja o impacto estimado</h2><p className="section-subtitle">O cálculo é proporcional ao consumo e valor atuais; serve como referência gerencial.</p></div><div className="simulator-control"><input type="range" min="5" max="35" step="5" value={target} onChange={e=>setTarget(Number(e.target.value))}/><div className="simulator-value">{target}%</div></div></section>
+
+  <section className="grid sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">{facts.map(({icon:Icon,title,value,text},i)=><article className="analysis-fact animate-enter" key={title} style={{animationDelay:`${i*45}ms`}}><div className="analysis-fact-icon"><Icon size={19}/></div><div className="analysis-fact-title">{title}</div><div className="analysis-fact-value">{value}</div><p>{text}</p></article>)}</section>
+
+  <section className="grid xl:grid-cols-2 gap-5">
+   <div className="card premium-card p-5 md:p-6"><div className="label">Composição financeira</div><h2 className="section-title">Onde o valor da fatura está concentrado</h2><p className="section-subtitle">Itens extraídos do documento. O total pode não fechar exatamente quando a fatura agrupa tributos ou componentes.</p><div className="grid md:grid-cols-[240px_1fr] items-center gap-4 mt-4"><div className="h-[240px]"><ResponsiveContainer><PieChart><Pie data={componentData} dataKey="value" nameKey="name" innerRadius={62} outerRadius={95} paddingAngle={3}>{componentData.map((_,i)=><Cell key={i} fill={PIE[i%PIE.length]}/>)}</Pie><Tooltip formatter={v=>brl(v)}/></PieChart></ResponsiveContainer></div><div className="space-y-2">{componentData.length?componentData.map((x,i)=><div className="legend-row" key={i}><span className="legend-dot" style={{background:PIE[i%PIE.length]}}/><span>{x.name}</span><strong>{brl(x.value)}</strong></div>):<div className="notice-info">Nenhum componente monetário detalhado foi identificado.</div>}</div></div></div>
+   <div className="card premium-card p-5 md:p-6"><div className="label">Histórico mensal</div><h2 className="section-title">Consumo identificado na própria fatura</h2><p className="section-subtitle">Ajuda a detectar sazonalidade e meses críticos antes mesmo de várias faturas serem cadastradas.</p><div className="h-[300px] mt-5"><ResponsiveContainer><BarChart data={hist.map(x=>({label:x.mes?.slice(5,7)+'/'+x.mes?.slice(2,4),kwh:x.kwh}))}><CartesianGrid strokeDasharray="4 6" vertical={false}/><XAxis dataKey="label" tick={{fontSize:11}}/><YAxis tick={{fontSize:11}}/><Tooltip formatter={v=>[`${num(v)} kWh`,'Consumo']}/>{avg&&<ReferenceLine y={avg} stroke="#ed1c2e" strokeDasharray="7 6" label={{value:'média',fill:'#ed1c2e',fontSize:11}}/>}<Bar dataKey="kwh" fill="#123b73" radius={[7,7,0,0]} maxBarSize={38}/></BarChart></ResponsiveContainer></div></div>
+  </section>
+
+  <section className="grid lg:grid-cols-3 gap-5">
+   <DiagnosticBlock tone="red" icon={AlertTriangle} title="Alertas e pontos de atenção" items={diag.alertas} fallback="Nenhum alerta específico foi identificado. Continue acompanhando tendências e qualidade dos dados."/>
+   <DiagnosticBlock tone="blue" icon={ThermometerSun} title="Possíveis causas" items={diag.causas_provaveis} fallback="A fatura isolada não comprova a causa física do consumo. Cruze os dados com ocupação, climatização, horários e equipamentos."/>
+   <DiagnosticBlock tone="green" icon={Wrench} title="Ações prioritárias" items={[...(diag.acoes_prioritarias||[]),...(diag.oportunidades_economia||[])]} fallback="Estabeleça linha de base, metas mensais, acompanhamento por setor e verificação antes/depois das ações."/>
+  </section>
+
+  <section className="card executive-note p-5 md:p-6"><div className="executive-note-icon"><Sparkles size={22}/></div><div><div className="label text-[#123b73]">Leitura executiva do Gemini</div><h2 className="section-title">Síntese para apresentação e tomada de decisão</h2><p>{diag.leitura_executiva||diag.resumo||'O Gemini não retornou uma síntese executiva para esta fatura.'}</p>{(diag.observacoes_tecnicas||[]).length>0&&<div className="mt-4 flex flex-wrap gap-2">{diag.observacoes_tecnicas.map((x,i)=><span className="tech-chip" key={i}>{x}</span>)}</div>}</div></section>
  </div>
 }
-function Bullet({text,green}){return <div className={`rounded-xl p-3 text-sm leading-relaxed border ${green?'bg-emerald-50 border-emerald-100 text-emerald-900':'bg-slate-50 border-slate-100 text-slate-700'}`}>{text}</div>}
+
+function DiagnosticBlock({tone,icon:Icon,title,items=[],fallback}){const list=(items||[]).slice(0,8);return <div className={`diagnostic-block ${tone}`}><div className="diagnostic-head"><Icon size={19}/><h3>{title}</h3></div><div className="space-y-2 mt-4">{list.length?list.map((x,i)=><div className="diagnostic-item" key={i}><span>{i+1}</span><p>{x}</p></div>):<div className="diagnostic-item"><span>•</span><p>{fallback}</p></div>}</div></div>}
