@@ -30,12 +30,21 @@ export function sum(values){ return values.map(n).filter(v=>v!==null).reduce((a,
 
 function tariffSlot(slot={}){
   const consumoKwh=firstNumber(slot.consumo_kwh)
-  const teValor=firstNumber(slot.te_valor), tusdValor=firstNumber(slot.tusd_valor)
-  const custoTotal=firstNumber(slot.custo_total,sumNullable([teValor,tusdValor]))
+  const teKwh=firstNumber(slot.te_consumo_kwh,consumoKwh)
+  const tusdKwh=firstNumber(slot.tusd_consumo_kwh,consumoKwh)
+  const teValor=firstNumber(slot.te_valor)
+  const tusdValor=firstNumber(slot.tusd_valor)
   return {
-    consumoKwh,custoTotal,teValor,tusdValor,
+    consumoKwh,
     demandaFaturadaKw:firstNumber(slot.demanda_faturada_kw),
-    custoEfetivoKwh:custoTotal!=null&&consumoKwh>0?custoTotal/consumoKwh:null
+    teKwh,
+    teValor,
+    teTarifa:firstNumber(slot.te_tarifa),
+    teCustoEfetivoKwh:teValor!=null&&teKwh>0?teValor/teKwh:null,
+    tusdKwh,
+    tusdValor,
+    tusdTarifa:firstNumber(slot.tusd_tarifa),
+    tusdCustoEfetivoKwh:tusdValor!=null&&tusdKwh>0?tusdValor/tusdKwh:null
   }
 }
 
@@ -43,8 +52,8 @@ export function billFinancials(bill={}){
   const ponta=tariffSlot(bill.tarifas_horarias?.ponta||{})
   const foraPonta=tariffSlot(bill.tarifas_horarias?.fora_ponta||{})
   return {
-    consumoFaturadoKwh:firstNumber(bill.consumo_faturado_kwh,bill.consumo_kwh),
-    demandaFaturadaKw:firstNumber(bill.demanda_faturada_kw,bill.demanda_kw),
+    consumoFaturadoKwh:firstNumber(bill.consumo_faturado_kwh),
+    demandaFaturadaKw:firstNumber(bill.demanda_faturada_kw),
     multasTotal:firstNumber(bill.multas_total,sumNullable((bill.multas||[]).map(x=>x?.valor))),
     impostosTotal:firstNumber(bill.impostos_total,sumNullable((bill.impostos||[]).map(x=>x?.valor))),
     multasCount:Array.isArray(bill.multas)?bill.multas.length:null,
@@ -90,7 +99,6 @@ export function buildMonthlySeries(bills=[]){
       ...x,diasEfetivos,
       consumoDiario:baseKwh!=null&&diasEfetivos?baseKwh/diasEfetivos:null,
       gastoDiario:x.valor!=null&&diasEfetivos?x.valor/diasEfetivos:null,
-      custoKwh:x.valor!=null&&baseKwh?x.valor/baseKwh:null,
       kwhM2:baseKwh!=null?baseKwh/POLI_AREA_M2:null,
       kwhPerCapita:baseKwh!=null?baseKwh/POLI_PEOPLE:null
     }
@@ -101,10 +109,10 @@ export function buildAnnualSeries(monthly=[]){
   const years=new Map()
   for(const m of monthly){
     const year=m.mes?.slice(0,4); if(!year)continue
-    const y=years.get(year)||{year,consumo:0,gasto:0,mesesConsumo:0,mesesFaturados:0,demandaMax:null,demandaFaturadaMax:null,_daily:[],_costs:[],multas:0,impostos:0,iluminacao:0,pontaConsumo:0,pontaCusto:0,fpConsumo:0,fpCusto:0,_hasMultas:false,_hasImpostos:false,_hasIluminacao:false,_hasPonta:false,_hasFp:false}
+    const y=years.get(year)||{year,consumo:0,gasto:0,mesesConsumo:0,mesesFaturados:0,demandaMax:null,demandaFaturadaMax:null,_daily:[],multas:0,impostos:0,iluminacao:0,pontaConsumo:0,pontaTE:0,pontaTUSD:0,fpConsumo:0,fpTE:0,fpTUSD:0,_hasMultas:false,_hasImpostos:false,_hasIluminacao:false,_hasPonta:false,_hasFp:false}
     const energy=firstNumber(m.consumoFaturadoKwh,m.kwh)
     if(energy!==null){y.consumo+=energy;y.mesesConsumo+=1}
-    if(n(m.valor)!==null){y.gasto+=n(m.valor);y.mesesFaturados+=1;if(n(m.custoKwh)!==null)y._costs.push(n(m.custoKwh))}
+    if(n(m.valor)!==null){y.gasto+=n(m.valor);y.mesesFaturados+=1}
     if(n(m.demanda)!==null)y.demandaMax=y.demandaMax==null?n(m.demanda):Math.max(y.demandaMax,n(m.demanda))
     if(n(m.demandaFaturadaKw)!==null)y.demandaFaturadaMax=y.demandaFaturadaMax==null?n(m.demandaFaturadaKw):Math.max(y.demandaFaturadaMax,n(m.demandaFaturadaKw))
     if(n(m.consumoDiario)!==null)y._daily.push(n(m.consumoDiario))
@@ -112,17 +120,19 @@ export function buildAnnualSeries(monthly=[]){
     if(n(m.impostosTotal)!==null){y.impostos+=n(m.impostosTotal);y._hasImpostos=true}
     if(n(m.iluminacaoPublica)!==null){y.iluminacao+=n(m.iluminacaoPublica);y._hasIluminacao=true}
     if(n(m.ponta?.consumoKwh)!==null){y.pontaConsumo+=n(m.ponta.consumoKwh);y._hasPonta=true}
-    if(n(m.ponta?.custoTotal)!==null)y.pontaCusto+=n(m.ponta.custoTotal)
+    if(n(m.ponta?.teValor)!==null)y.pontaTE+=n(m.ponta.teValor)
+    if(n(m.ponta?.tusdValor)!==null)y.pontaTUSD+=n(m.ponta.tusdValor)
     if(n(m.foraPonta?.consumoKwh)!==null){y.fpConsumo+=n(m.foraPonta.consumoKwh);y._hasFp=true}
-    if(n(m.foraPonta?.custoTotal)!==null)y.fpCusto+=n(m.foraPonta.custoTotal)
+    if(n(m.foraPonta?.teValor)!==null)y.fpTE+=n(m.foraPonta.teValor)
+    if(n(m.foraPonta?.tusdValor)!==null)y.fpTUSD+=n(m.foraPonta.tusdValor)
     years.set(year,y)
   }
   return [...years.values()].sort((a,b)=>a.year.localeCompare(b.year)).map(y=>({
-    ...y,mediaMensal:y.mesesConsumo?y.consumo/y.mesesConsumo:null,mediaDiaria:average(y._daily),gasto:y.mesesFaturados?y.gasto:null,custoMedioKwh:average(y._costs),
+    ...y,mediaMensal:y.mesesConsumo?y.consumo/y.mesesConsumo:null,mediaDiaria:average(y._daily),gasto:y.mesesFaturados?y.gasto:null,
     kwhM2:y.mesesConsumo?y.consumo/POLI_AREA_M2:null,kwhPerCapita:y.mesesConsumo?y.consumo/POLI_PEOPLE:null,
     multas:y._hasMultas?y.multas:null,impostos:y._hasImpostos?y.impostos:null,iluminacao:y._hasIluminacao?y.iluminacao:null,
     pontaConsumo:y._hasPonta?y.pontaConsumo:null,foraPontaConsumo:y._hasFp?y.fpConsumo:null,
-    pontaCusto:y._hasPonta?y.pontaCusto:null,foraPontaCusto:y._hasFp?y.fpCusto:null
+    pontaTE:y._hasPonta?y.pontaTE:null,pontaTUSD:y._hasPonta?y.pontaTUSD:null,foraPontaTE:y._hasFp?y.fpTE:null,foraPontaTUSD:y._hasFp?y.fpTUSD:null
   }))
 }
 
@@ -138,8 +148,7 @@ export function monthMetrics(month,monthly=[]){
   const diasVenc=venc&&!Number.isNaN(venc.getTime())?Math.round((venc-today)/86400000):null
   const energy=firstNumber(month.consumoFaturadoKwh,month.kwh)
   const theoreticalSavingKwh=historyAvg!=null&&energy!=null&&energy>historyAvg?energy-historyAvg:0
-  const theoreticalSavingBrl=theoreticalSavingKwh&&month.custoKwh?theoreticalSavingKwh*month.custoKwh:null
-  return {dias,consumoDiario:energy!=null&&dias?energy/dias:null,gastoDiario:month.valor!=null&&dias?month.valor/dias:null,custoKwh:month.custoKwh,prevChange:pctChange(energy,firstNumber(prev?.consumoFaturadoKwh,prev?.kwh)),yoyChange:pctChange(energy,firstNumber(lastYear?.consumoFaturadoKwh,lastYear?.kwh)),historyDeviation:pctChange(energy,historyAvg),yearDeviation:pctChange(energy,yearAvg),historyAvg,yearAvg,previous:prev,lastYear,diasVenc,theoreticalSavingKwh,theoreticalSavingBrl,kwhM2:energy!=null?energy/POLI_AREA_M2:null,kwhPerCapita:energy!=null?energy/POLI_PEOPLE:null}
+  return {dias,consumoDiario:energy!=null&&dias?energy/dias:null,gastoDiario:month.valor!=null&&dias?month.valor/dias:null,prevChange:pctChange(energy,firstNumber(prev?.consumoFaturadoKwh,prev?.kwh)),yoyChange:pctChange(energy,firstNumber(lastYear?.consumoFaturadoKwh,lastYear?.kwh)),historyDeviation:pctChange(energy,historyAvg),yearDeviation:pctChange(energy,yearAvg),historyAvg,yearAvg,previous:prev,lastYear,diasVenc,theoreticalSavingKwh,kwhM2:energy!=null?energy/POLI_AREA_M2:null,kwhPerCapita:energy!=null?energy/POLI_PEOPLE:null}
 }
 
 export function yearMetrics(year,monthly=[],annual=[]){
@@ -147,12 +156,12 @@ export function yearMetrics(year,monthly=[],annual=[]){
   const consumptions=months.map(x=>firstNumber(x.consumoFaturadoKwh,x.kwh)).filter(v=>n(v)!==null),actualSpends=months.map(x=>x.valor).filter(v=>n(v)!==null),elapsed=consumptions.length
   const projectedConsumption=elapsed&&elapsed<12?average(consumptions)*12:current?.consumo??null,projectedSpend=actualSpends.length&&actualSpends.length<12?average(actualSpends)*12:current?.gasto??null
   const sorted=months.filter(x=>firstNumber(x.consumoFaturadoKwh,x.kwh)!==null).sort((a,b)=>firstNumber(b.consumoFaturadoKwh,b.kwh)-firstNumber(a.consumoFaturadoKwh,a.kwh))
-  return {months,current,previous:prev,consumptionChange:pctChange(current?.consumo,prev?.consumo),spendChange:pctChange(current?.gasto,prev?.gasto),projectedConsumption,projectedSpend,best:sorted.at(-1)||null,worst:sorted[0]||null,avgDays:average(months.map(x=>x.dias)),avgDaily:average(months.map(x=>x.consumoDiario)),avgCostKwh:average(months.map(x=>x.custoKwh)),totalDays:sum(months.map(x=>x.dias)),kwhM2:current?.consumo!=null?current.consumo/POLI_AREA_M2:null,kwhPerCapita:current?.consumo!=null?current.consumo/POLI_PEOPLE:null}
+  return {months,current,previous:prev,consumptionChange:pctChange(current?.consumo,prev?.consumo),spendChange:pctChange(current?.gasto,prev?.gasto),projectedConsumption,projectedSpend,best:sorted.at(-1)||null,worst:sorted[0]||null,avgDays:average(months.map(x=>x.dias)),avgDaily:average(months.map(x=>x.consumoDiario)),totalDays:sum(months.map(x=>x.dias)),kwhM2:current?.consumo!=null?current.consumo/POLI_AREA_M2:null,kwhPerCapita:current?.consumo!=null?current.consumo/POLI_PEOPLE:null}
 }
 
 export function allYearsMetrics(monthly=[],annual=[]){
   const consumptionValues=monthly.map(x=>firstNumber(x.consumoFaturadoKwh,x.kwh)).filter(v=>n(v)!==null),spendValues=monthly.map(x=>x.valor).filter(v=>n(v)!==null),annualSorted=[...annual].sort((a,b)=>b.consumo-a.consumo),latest=annual.at(-1),previous=annual.at(-2),totalConsumption=sum(consumptionValues)
-  return {totalConsumption,totalSpend:sum(spendValues),avgMonthly:average(consumptionValues),avgDaily:average(monthly.map(x=>x.consumoDiario)),avgCostKwh:average(monthly.map(x=>x.custoKwh)),years:annual.length,months:consumptionValues.length,highestYear:annualSorted[0]||null,lowestYear:annualSorted.at(-1)||null,latest,latestChange:pctChange(latest?.consumo,previous?.consumo),kwhM2:consumptionValues.length?totalConsumption/POLI_AREA_M2:null,kwhPerCapita:consumptionValues.length?totalConsumption/POLI_PEOPLE:null}
+  return {totalConsumption,totalSpend:sum(spendValues),avgMonthly:average(consumptionValues),avgDaily:average(monthly.map(x=>x.consumoDiario)),years:annual.length,months:consumptionValues.length,highestYear:annualSorted[0]||null,lowestYear:annualSorted.at(-1)||null,latest,latestChange:pctChange(latest?.consumo,previous?.consumo),kwhM2:consumptionValues.length?totalConsumption/POLI_AREA_M2:null,kwhPerCapita:consumptionValues.length?totalConsumption/POLI_PEOPLE:null}
 }
 
 export function efficiencyScore(month,metrics){ if(!month||!metrics)return null; let score=82; if(metrics.historyDeviation!=null)score-=Math.max(-8,Math.min(25,metrics.historyDeviation*.45)); if(metrics.prevChange!=null&&metrics.prevChange>10)score-=Math.min(12,metrics.prevChange*.2); if(month.demanda!=null&&month.demandaContratada!=null&&month.demanda>month.demandaContratada)score-=18; if(month.bill?.diagnostico?.alertas?.length)score-=Math.min(12,month.bill.diagnostico.alertas.length*3); return Math.max(0,Math.min(100,Math.round(score))) }
@@ -160,6 +169,22 @@ export function selectScope(mode,{month,year,monthly}){ if(mode==='month')return
 
 export function scopeEnergyMetrics(rows=[]){
   const totalConsumption=sumNullable(rows.map(x=>firstNumber(x.consumoFaturadoKwh,x.kwh)))
+  const tariffAggregate=(slotName)=>{
+    const slots=rows.map(x=>x?.[slotName]).filter(Boolean)
+    const consumo=sumNullable(slots.map(x=>x.consumoKwh))
+    const demandaMax=slots.map(x=>n(x.demandaFaturadaKw)).filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null)
+    const teValor=sumNullable(slots.map(x=>x.teValor))
+    const teKwh=sumNullable(slots.map(x=>x.teKwh))
+    const tusdValor=sumNullable(slots.map(x=>x.tusdValor))
+    const tusdKwh=sumNullable(slots.map(x=>x.tusdKwh))
+    return {
+      consumo,demandaMax,teValor,teKwh,tusdValor,tusdKwh,
+      teCustoEfetivoKwh:teValor!=null&&teKwh>0?teValor/teKwh:null,
+      tusdCustoEfetivoKwh:tusdValor!=null&&tusdKwh>0?tusdValor/tusdKwh:null
+    }
+  }
+  const ponta=tariffAggregate('ponta')
+  const foraPonta=tariffAggregate('foraPonta')
   return {
     totalConsumption,
     kwhM2:totalConsumption!=null?totalConsumption/POLI_AREA_M2:null,
@@ -171,13 +196,21 @@ export function scopeEnergyMetrics(rows=[]){
     multasCount:sumNullable(rows.map(x=>x.multasCount)),
     impostosCount:sumNullable(rows.map(x=>x.impostosCount)),
     iluminacao:sumNullable(rows.map(x=>x.iluminacaoPublica)),
-    pontaConsumo:sumNullable(rows.map(x=>x.ponta?.consumoKwh)),
-    pontaCusto:sumNullable(rows.map(x=>x.ponta?.custoTotal)),
-    pontaTE:sumNullable(rows.map(x=>x.ponta?.teValor)),
-    pontaTUSD:sumNullable(rows.map(x=>x.ponta?.tusdValor)),
-    foraPontaConsumo:sumNullable(rows.map(x=>x.foraPonta?.consumoKwh)),
-    foraPontaCusto:sumNullable(rows.map(x=>x.foraPonta?.custoTotal)),
-    foraPontaTE:sumNullable(rows.map(x=>x.foraPonta?.teValor)),
-    foraPontaTUSD:sumNullable(rows.map(x=>x.foraPonta?.tusdValor))
+    pontaConsumo:ponta.consumo,
+    pontaDemandaPaga:ponta.demandaMax,
+    pontaTE:ponta.teValor,
+    pontaTEKwh:ponta.teKwh,
+    pontaTECustoEfetivo:ponta.teCustoEfetivoKwh,
+    pontaTUSD:ponta.tusdValor,
+    pontaTUSDKwh:ponta.tusdKwh,
+    pontaTUSDCustoEfetivo:ponta.tusdCustoEfetivoKwh,
+    foraPontaConsumo:foraPonta.consumo,
+    foraPontaDemandaPaga:foraPonta.demandaMax,
+    foraPontaTE:foraPonta.teValor,
+    foraPontaTEKwh:foraPonta.teKwh,
+    foraPontaTECustoEfetivo:foraPonta.teCustoEfetivoKwh,
+    foraPontaTUSD:foraPonta.tusdValor,
+    foraPontaTUSDKwh:foraPonta.tusdKwh,
+    foraPontaTUSDCustoEfetivo:foraPonta.tusdCustoEfetivoKwh
   }
 }

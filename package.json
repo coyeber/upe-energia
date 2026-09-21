@@ -1,13 +1,7 @@
 {
-<<<<<<< HEAD
   "name": "poli-energia-dashboard",
   "private": true,
-  "version": "9.0.0",
-=======
-  "name": "upe-energia-gemini-electric-premium",
-  "private": true,
-  "version": "8.0.0",
->>>>>>> 7c356696ce76eb8c7d965f77ef13a2adde44404d
+  "version": "9.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

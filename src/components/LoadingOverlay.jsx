@@ -20,11 +20,7 @@ export default function LoadingOverlay({ open, stage = 'reading', progress = 0, 
         <span className="loading-spark ls1"/><span className="loading-spark ls2"/><span className="loading-spark ls3"/>
       </div>
       <div className="text-center mt-5">
-<<<<<<< HEAD
         <div className="label !text-blue-200 inline-flex items-center gap-2"><Sparkles size={13}/> POLI Energia • Processamento em andamento</div>
-=======
-        <div className="label !text-blue-200 inline-flex items-center gap-2"><Sparkles size={13}/> UPE Energia • Processamento em andamento</div>
->>>>>>> 7c356696ce76eb8c7d965f77ef13a2adde44404d
         <h2 className="text-2xl md:text-3xl font-black text-white mt-2">Transformando a fatura em indicadores</h2>
         <p className="text-blue-100/80 mt-2 text-sm md:text-base">{message || 'Aguarde enquanto preparamos a análise.'}</p>
       </div>
