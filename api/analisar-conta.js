@@ -1,4 +1,4 @@
-const DEFAULT_MODEL = 'gemini-2.5-flash'
+const DEFAULT_MODEL = 'gemini-3.5-flash-lite'
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 
 const asNumber = (v) => {
@@ -38,11 +38,14 @@ function normalize(data = {}) {
     leitura_anterior: asNumber(data.leitura_anterior), leitura_atual: asNumber(data.leitura_atual), consumo_kwh: asNumber(data.consumo_kwh),
     consumo_faturado_kwh: asNumber(data.consumo_faturado_kwh), demanda_kw: asNumber(data.demanda_kw),
     demanda_faturada_kw: asNumber(data.demanda_faturada_kw), demanda_contratada_kw: asNumber(data.demanda_contratada_kw),
+    demanda_ultrapassagem_kw: asNumber(data.demanda_ultrapassagem_kw), demanda_ultrapassagem_valor: asNumber(data.demanda_ultrapassagem_valor),
     valor_total: asNumber(data.valor_total), classe_consumidora: text(data.classe_consumidora), tipo_fornecimento: text(data.tipo_fornecimento),
     bandeira_tarifaria: text(data.bandeira_tarifaria), iluminacao_publica_valor: asNumber(data.iluminacao_publica_valor),
     multas, multas_total: multasTotal, impostos, impostos_total: impostosTotal,
     tarifas_horarias: { ponta: tariff(data.tarifas_horarias?.ponta), fora_ponta: tariff(data.tarifas_horarias?.fora_ponta) },
     historico_consumo: arr(data.historico_consumo).map(x=>({mes:text(x?.mes),kwh:asNumber(x?.kwh),dias:asNumber(x?.dias)})).filter(x=>x.mes&&x.kwh!==null),
+    historico_demanda: arr(data.historico_demanda).map(x=>({mes:text(x?.mes),demanda_faturada_kw:asNumber(x?.demanda_faturada_kw),demanda_contratada_kw:asNumber(x?.demanda_contratada_kw),ultrapassagem_kw:asNumber(x?.ultrapassagem_kw),ultrapassagem_valor:asNumber(x?.ultrapassagem_valor)})).filter(x=>x.mes),
+    campos_extras: arr(data.campos_extras).map(x=>({nome:text(x?.nome)||'Campo',valor:text(x?.valor),unidade:text(x?.unidade)})),
     componentes_fatura: arr(data.componentes_fatura).map(x=>({nome:text(x?.nome)||'Componente',valor:asNumber(x?.valor),unidade:text(x?.unidade),quantidade:asNumber(x?.quantidade)})),
     diagnostico: {
       resumo:text(data.diagnostico?.resumo)||'', leitura_executiva:text(data.diagnostico?.leitura_executiva)||'',
@@ -83,6 +86,9 @@ REGRAS OBRIGATÓRIAS:
 - NÃO calcule custo efetivo no backend. O dashboard calcula separadamente: TE efetiva = TE (R$) ÷ kWh da TE do posto; TUSD efetiva = TUSD (R$) ÷ kWh da TUSD do posto. Ponta e Fora de Ponta nunca são misturados nesse cálculo.
 - Identifique cobranças de iluminação pública, multas e impostos separadamente. Multa só deve ser classificada como multa se a descrição da fatura indicar multa/penalidade/ultrapassagem/mora.
 - Extraia TODO o histórico mensal de consumo existente.
+- Extraia também histórico de demanda mensal quando houver na conta, incluindo demanda faturada, demanda contratada, ultrapassagem em kW e valor monetário da ultrapassagem.
+- Procure explicitamente cobranças descritas como ultrapassagem de demanda, excedente de demanda ou equivalentes e preencha demanda_ultrapassagem_kw e demanda_ultrapassagem_valor.
+- Tente ler todos os campos úteis da fatura. Informações relevantes que não couberem no esquema principal devem ir em campos_extras, preservando nome, valor e unidade.
 - O diagnóstico NÃO deve dizer que o consumo está acima ou abaixo da média histórica; essa comparação será calculada pelo dashboard. Limite o diagnóstico aos fatos da fatura e hipóteses claramente identificadas como hipóteses.
 - Não conclua que existe ultrapassagem de demanda sem evidência explícita.
 
@@ -90,7 +96,7 @@ JSON ESPERADO:
 {
  "concessionaria":string|null,"unidade_consumidora":string|null,"mes_referencia":string|null,"data_emissao":string|null,"data_vencimento":string|null,
  "periodo_leitura_inicio":string|null,"periodo_leitura_fim":string|null,"proxima_leitura":string|null,"dias_faturados":number|null,"leitura_anterior":number|null,"leitura_atual":number|null,
- "consumo_kwh":number|null,"consumo_faturado_kwh":number|null,"demanda_kw":number|null,"demanda_faturada_kw":number|null,"demanda_contratada_kw":number|null,"valor_total":number|null,
+ "consumo_kwh":number|null,"consumo_faturado_kwh":number|null,"demanda_kw":number|null,"demanda_faturada_kw":number|null,"demanda_contratada_kw":number|null,"demanda_ultrapassagem_kw":number|null,"demanda_ultrapassagem_valor":number|null,"valor_total":number|null,
  "classe_consumidora":string|null,"tipo_fornecimento":string|null,"bandeira_tarifaria":string|null,"iluminacao_publica_valor":number|null,
  "multas":[{"descricao":string,"valor":number}],"multas_total":number|null,"impostos":[{"descricao":string,"valor":number}],"impostos_total":number|null,
  "tarifas_horarias":{
@@ -98,6 +104,8 @@ JSON ESPERADO:
    "fora_ponta":{"consumo_kwh":number|null,"demanda_faturada_kw":number|null,"te_consumo_kwh":number|null,"te_valor":number|null,"te_tarifa":number|null,"tusd_consumo_kwh":number|null,"tusd_valor":number|null,"tusd_tarifa":number|null}
  },
  "historico_consumo":[{"mes":"YYYY-MM","kwh":number,"dias":number|null}],
+ "historico_demanda":[{"mes":"YYYY-MM","demanda_faturada_kw":number|null,"demanda_contratada_kw":number|null,"ultrapassagem_kw":number|null,"ultrapassagem_valor":number|null}],
+ "campos_extras":[{"nome":string,"valor":string|null,"unidade":string|null}],
  "componentes_fatura":[{"nome":string,"valor":number|null,"unidade":string|null,"quantidade":number|null}],
  "diagnostico":{"resumo":string,"leitura_executiva":string,"causas_provaveis":[string],"acoes_prioritarias":[string],"oportunidades_economia":[string],"alertas":[string],"observacoes_tecnicas":[string]},
  "confianca":{"geral":"alta"|"media"|"baixa","observacoes":[string]}

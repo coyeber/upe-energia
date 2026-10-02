@@ -1,46 +1,38 @@
-# POLI Energia — Dashboard Profissional V9.1
+# POLI Energia — V10
 
-Dashboard institucional para análise de contas de energia da POLI/UPE, com processamento via backend seguro no Vercel, PDF.js, OCR de fallback e persistência local.
+Dashboard de acompanhamento energético da Escola Politécnica de Pernambuco (POLI), com foco em leitura simples, navegação por indicador e análise automática das faturas.
 
-## Referências fixas da POLI
-
+## Referências da unidade
 - Área construída: **8.860,00 m²**
-- Pessoal + alunos: **2.392 pessoas**
+- Pessoas: **2.392** — referência **2025**
 - Endereço: **Rua Prof. Benedito Monteiro, 455**
 - Classificação: **A4 - Horo-Sazonal Verde - Poder Público**
 
-## Ajustes da V9
+## Páginas principais
+- **Visão geral**: resumo executivo e atalhos clicáveis.
+- **Consumo**: histórico mensal, Ponta (17h30–20h30), Fora de Ponta, média anual tracejada, kWh/m² e kWh per capita.
+- **Demanda**: um gráfico dedicado com demanda faturada/paga, limite contratado tracejado, média anual tracejada e quadro de ultrapassagens com valores quando identificados na fatura.
+- **TE**: quantidade e custo de Tarifa de Energia, separados em Ponta e Fora de Ponta, com médias anuais tracejadas.
+- **TUSD**: quantidade e custo de Tarifa de Uso do Sistema de Distribuição, separados em Ponta e Fora de Ponta, com médias anuais tracejadas.
+- **Enviar conta**: extração automática do PDF; a revisão detalhada é opcional.
 
-- Gráfico exclusivo de kWh/m² total e gráfico exclusivo de kWh per capita total.
-- Gráfico exclusivo de consumo faturado/pago em kWh.
-- Gráfico exclusivo de demanda faturada/paga em kW.
-- Multas e impostos: quantidade e valor.
-- Iluminação pública separada.
-- Ponta (17h30–20h30) e Fora de Ponta exibidas em séries independentes.
-- Ponta e Fora de Ponta nunca são misturadas nos cálculos tarifários.
-- TE e TUSD nunca são somadas para formar um custo efetivo único.
-- Quatro custos efetivos independentes: **TE Ponta**, **TUSD Ponta**, **TE Fora de Ponta** e **TUSD Fora de Ponta**.
-- Fórmula: valor do componente (R$) ÷ quantidade do mesmo componente/posto (kWh). Quando a quantidade própria de TE/TUSD não existe na fatura, o consumo do próprio posto é usado como fallback explícito.
-- Gráficos separados para TE e TUSD por posto tarifário.
-- Padronização para **Consumo diário normalizado**.
-- Padronização para **Score de prioridade**.
-- Síntese executiva calculada pelo dashboard para evitar contradições com a média histórica.
-- Tela de conferência ampliada para revisar dados tarifários antes de salvar.
-- Identificação da POLI no cabeçalho e ícone de raio no navegador.
+## Regras tarifárias
+Ponta e Fora de Ponta nunca são misturadas. TE e TUSD também permanecem independentes. O custo efetivo de cada componente é calculado apenas com o valor e o kWh correspondentes ao mesmo componente e ao mesmo posto tarifário.
 
-## Variáveis no Vercel
+## Variáveis de ambiente
+No Vercel:
 
-Mantenha as variáveis do serviço de análise que já funcionam no seu projeto. Após qualquer alteração, faça um novo deploy.
-
-## Desenvolvimento local
-
-```bash
-npm install
-vercel dev
+```text
+GEMINI_API_KEY=sua_chave
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-Abra o endereço informado pelo Vercel CLI, normalmente `http://localhost:3000`.
+Essas variáveis ficam apenas no backend e não aparecem na interface do site.
 
-## Segurança
+## Desenvolvimento
+```bash
+npm install
+npm run dev
+```
 
-A credencial do serviço permanece apenas no backend. O PDF original é processado no navegador; apenas o texto extraído é enviado ao endpoint de análise.
+Para testar as funções serverless localmente, use `vercel dev`.

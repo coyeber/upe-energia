@@ -8,6 +8,10 @@ import UploadPage from './pages/UploadPage'
 import AnalysisPage from './pages/AnalysisPage'
 import HistoryPage from './pages/HistoryPage'
 import ReportPage from './pages/ReportPage'
+import ConsumptionPage from './pages/ConsumptionPage'
+import DemandPage from './pages/DemandPage'
+import TEPage from './pages/TEPage'
+import TUSDPage from './pages/TUSDPage'
 import { getBills,saveBill,deleteBill } from './data/storage'
 import { checkAnalysisService } from './services/analysisService'
 
@@ -20,7 +24,7 @@ export default function App(){
  return <div className="min-h-screen app-shell"><ElectricBackdrop/>
   <header className="topbar"><div className="topbar-energy-flow"/><div className="topbar-inner"><div className="topbar-brand"><div className="brand-bolt"><Zap size={20} fill="currentColor"/></div><img src="/upe-logo.png" alt="Universidade de Pernambuco"/><span/><div className="brand-copy"><strong>POLI Energia</strong><small>Escola Politécnica de Pernambuco</small><div className="topbar-identification"><em><MapPin size={11}/>Rua Prof. Benedito Monteiro, 455</em><em><Building2 size={11}/>A4 - Horo-Sazonal Verde - Poder Público</em></div></div></div><div className="topbar-actions"><span className="live-energy"><i/><Activity size={13}/> Monitoramento ativo</span><ServiceStatus status={status}/><span className="top-count"><Wifi size={14}/>{bills.length} conta{bills.length===1?'':'s'}</span></div></div><div className="topbar-red"/></header>
   {status==='error'&&<div className="system-alert"><div><ShieldCheck size={16}/>{health?.apiKeyConfigured===false?'Configure o serviço de análise no Vercel para ativar o processamento.':'Não foi possível verificar o serviço de análise agora.'}</div></div>}
-  <main className="main-layout"><Sidebar page={page} setPage={setPage} count={bills.length}/><section key={page} className="min-w-0 flex-1 page-switch">{page==='dashboard'&&<DashboardPage bills={bills} onAdd={()=>setPage('upload')}/>} {page==='upload'&&<UploadPage onSaved={saved}/>} {page==='analysis'&&<AnalysisPage bills={bills}/>} {page==='report'&&<ReportPage bills={bills}/>} {page==='history'&&<HistoryPage bills={bills} onDelete={del}/>}</section></main>
+  <main className="main-layout"><Sidebar page={page} setPage={setPage} count={bills.length}/><section key={page} className="min-w-0 flex-1 page-switch">{page==='dashboard'&&<DashboardPage bills={bills} onAdd={()=>setPage('upload')} onNavigate={setPage}/>} {page==='consumption'&&<ConsumptionPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='demand'&&<DemandPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='te'&&<TEPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='tusd'&&<TUSDPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='upload'&&<UploadPage onSaved={saved}/>} {page==='analysis'&&<AnalysisPage bills={bills}/>} {page==='report'&&<ReportPage bills={bills}/>} {page==='history'&&<HistoryPage bills={bills} onDelete={del}/>}</section></main>
   <footer className="site-footer"><div><span>POLI Energia • Gestão e análise de consumo elétrico</span><span>Processamento seguro via backend • PDF original não é armazenado</span></div></footer>
  </div>
 }
