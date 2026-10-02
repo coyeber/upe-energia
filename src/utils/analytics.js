@@ -1,5 +1,6 @@
 export const POLI_AREA_M2 = 8860
 export const POLI_PEOPLE = 2392
+export const POLI_PEOPLE_REFERENCE_YEAR = 2025
 
 const n = (v) => {
   if (v === null || v === undefined || v === '') return null
@@ -51,9 +52,12 @@ function tariffSlot(slot={}){
 export function billFinancials(bill={}){
   const ponta=tariffSlot(bill.tarifas_horarias?.ponta||{})
   const foraPonta=tariffSlot(bill.tarifas_horarias?.fora_ponta||{})
+  const demandaFaturadaKw=firstNumber(bill.demanda_faturada_kw,ponta.demandaFaturadaKw,foraPonta.demandaFaturadaKw)
   return {
     consumoFaturadoKwh:firstNumber(bill.consumo_faturado_kwh),
-    demandaFaturadaKw:firstNumber(bill.demanda_faturada_kw),
+    demandaFaturadaKw,
+    demandaUltrapassagemKw:firstNumber(bill.demanda_ultrapassagem_kw),
+    demandaUltrapassagemValor:firstNumber(bill.demanda_ultrapassagem_valor),
     multasTotal:firstNumber(bill.multas_total,sumNullable((bill.multas||[]).map(x=>x?.valor))),
     impostosTotal:firstNumber(bill.impostos_total,sumNullable((bill.impostos||[]).map(x=>x?.valor))),
     multasCount:Array.isArray(bill.multas)?bill.multas.length:null,
@@ -72,6 +76,15 @@ export function buildMonthlySeries(bills=[]){
       const prev=map.get(h.mes)||{mes:h.mes,kwh:null,valor:null,demanda:null,demandaContratada:null,dias:null,actual:false,sourceCount:0}
       prev.kwh=n(h.kwh); if(n(h.dias)!==null)prev.dias=n(h.dias); prev.sourceCount+=1; map.set(h.mes,prev)
     }
+    for(const h of bill.historico_demanda||[]){
+      if(!h?.mes) continue
+      const prev=map.get(h.mes)||{mes:h.mes,kwh:null,valor:null,demanda:null,demandaContratada:null,dias:null,actual:false,sourceCount:0}
+      if(n(h.demanda_faturada_kw)!==null) prev.demandaFaturadaKw=n(h.demanda_faturada_kw)
+      if(n(h.demanda_contratada_kw)!==null) prev.demandaContratada=n(h.demanda_contratada_kw)
+      if(n(h.ultrapassagem_kw)!==null) prev.demandaUltrapassagemKw=n(h.ultrapassagem_kw)
+      if(n(h.ultrapassagem_valor)!==null) prev.demandaUltrapassagemValor=n(h.ultrapassagem_valor)
+      prev.sourceCount+=1; map.set(h.mes,prev)
+    }
     if(bill.mes_referencia){
       const key=bill.mes_referencia
       const prev=map.get(key)||{mes:key,kwh:null,valor:null,demanda:null,demandaContratada:null,dias:null,actual:false,sourceCount:0}
@@ -83,6 +96,8 @@ export function buildMonthlySeries(bills=[]){
       prev.dias=n(bill.dias_faturados)??daysBetween(bill.periodo_leitura_inicio,bill.periodo_leitura_fim)??prev.dias
       prev.consumoFaturadoKwh=fin.consumoFaturadoKwh
       prev.demandaFaturadaKw=fin.demandaFaturadaKw
+      prev.demandaUltrapassagemKw=fin.demandaUltrapassagemKw
+      prev.demandaUltrapassagemValor=fin.demandaUltrapassagemValor
       prev.multasTotal=fin.multasTotal
       prev.impostosTotal=fin.impostosTotal
       prev.multasCount=fin.multasCount
@@ -109,12 +124,15 @@ export function buildAnnualSeries(monthly=[]){
   const years=new Map()
   for(const m of monthly){
     const year=m.mes?.slice(0,4); if(!year)continue
-    const y=years.get(year)||{year,consumo:0,gasto:0,mesesConsumo:0,mesesFaturados:0,demandaMax:null,demandaFaturadaMax:null,_daily:[],multas:0,impostos:0,iluminacao:0,pontaConsumo:0,pontaTE:0,pontaTUSD:0,fpConsumo:0,fpTE:0,fpTUSD:0,_hasMultas:false,_hasImpostos:false,_hasIluminacao:false,_hasPonta:false,_hasFp:false}
+    const y=years.get(year)||{year,consumo:0,gasto:0,mesesConsumo:0,mesesFaturados:0,demandaMax:null,demandaFaturadaMax:null,_daily:[],multas:0,impostos:0,iluminacao:0,pontaConsumo:0,pontaTE:0,pontaTUSD:0,fpConsumo:0,fpTE:0,fpTUSD:0,_hasMultas:false,_hasImpostos:false,_hasIluminacao:false,_hasPonta:false,_hasFp:false,ultrapassagemValor:0,ultrapassagens:0,_hasUltrapassagem:false}
     const energy=firstNumber(m.consumoFaturadoKwh,m.kwh)
     if(energy!==null){y.consumo+=energy;y.mesesConsumo+=1}
     if(n(m.valor)!==null){y.gasto+=n(m.valor);y.mesesFaturados+=1}
     if(n(m.demanda)!==null)y.demandaMax=y.demandaMax==null?n(m.demanda):Math.max(y.demandaMax,n(m.demanda))
     if(n(m.demandaFaturadaKw)!==null)y.demandaFaturadaMax=y.demandaFaturadaMax==null?n(m.demandaFaturadaKw):Math.max(y.demandaFaturadaMax,n(m.demandaFaturadaKw))
+    const exceeded = (n(m.demandaUltrapassagemKw)!==null && n(m.demandaUltrapassagemKw)>0) || (n(m.demandaFaturadaKw)!==null && n(m.demandaContratada)!==null && n(m.demandaFaturadaKw)>n(m.demandaContratada))
+    if(exceeded){y.ultrapassagens+=1;y._hasUltrapassagem=true}
+    if(n(m.demandaUltrapassagemValor)!==null){y.ultrapassagemValor+=n(m.demandaUltrapassagemValor);y._hasUltrapassagem=true}
     if(n(m.consumoDiario)!==null)y._daily.push(n(m.consumoDiario))
     if(n(m.multasTotal)!==null){y.multas+=n(m.multasTotal);y._hasMultas=true}
     if(n(m.impostosTotal)!==null){y.impostos+=n(m.impostosTotal);y._hasImpostos=true}
@@ -132,11 +150,12 @@ export function buildAnnualSeries(monthly=[]){
     kwhM2:y.mesesConsumo?y.consumo/POLI_AREA_M2:null,kwhPerCapita:y.mesesConsumo?y.consumo/POLI_PEOPLE:null,
     multas:y._hasMultas?y.multas:null,impostos:y._hasImpostos?y.impostos:null,iluminacao:y._hasIluminacao?y.iluminacao:null,
     pontaConsumo:y._hasPonta?y.pontaConsumo:null,foraPontaConsumo:y._hasFp?y.fpConsumo:null,
-    pontaTE:y._hasPonta?y.pontaTE:null,pontaTUSD:y._hasPonta?y.pontaTUSD:null,foraPontaTE:y._hasFp?y.fpTE:null,foraPontaTUSD:y._hasFp?y.fpTUSD:null
+    pontaTE:y._hasPonta?y.pontaTE:null,pontaTUSD:y._hasPonta?y.pontaTUSD:null,foraPontaTE:y._hasFp?y.fpTE:null,foraPontaTUSD:y._hasFp?y.fpTUSD:null,
+    ultrapassagens:y._hasUltrapassagem?y.ultrapassagens:null,ultrapassagemValor:y._hasUltrapassagem?y.ultrapassagemValor:null
   }))
 }
 
-export function coverageStats(monthly=[],bills=[]){ return {actualMonths:monthly.filter(m=>m.actual).length,consumptionMonths:monthly.filter(m=>n(m.kwh)!==null).length,valueMonths:monthly.filter(m=>n(m.valor)!==null).length,demandMonths:monthly.filter(m=>n(m.demanda)!==null).length,bills:bills.length} }
+export function coverageStats(monthly=[],bills=[]){ return {actualMonths:monthly.filter(m=>m.actual).length,consumptionMonths:monthly.filter(m=>n(m.kwh)!==null).length,valueMonths:monthly.filter(m=>n(m.valor)!==null).length,demandMonths:monthly.filter(m=>n(m.demanda)!==null||n(m.demandaFaturadaKw)!==null).length,bills:bills.length} }
 
 export function monthMetrics(month,monthly=[]){
   if(!month)return null
@@ -213,4 +232,12 @@ export function scopeEnergyMetrics(rows=[]){
     foraPontaTUSDKwh:foraPonta.tusdKwh,
     foraPontaTUSDCustoEfetivo:foraPonta.tusdCustoEfetivoKwh
   }
+}
+
+export function yearRows(monthly=[],year){ return monthly.filter(x=>x.mes?.startsWith(String(year))).sort((a,b)=>a.mes.localeCompare(b.mes)) }
+export function annualAverage(rows=[],getter){ return average(rows.map(getter)) }
+export function demandExceeded(row){
+  const billed=n(row?.demandaFaturadaKw), contracted=n(row?.demandaContratada), explicit=n(row?.demandaUltrapassagemKw)
+  if(explicit!==null) return explicit>0
+  return billed!==null&&contracted!==null&&billed>contracted
 }
