@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { BrainCircuit, CheckCircle2, FileSearch, ScanLine, ShieldCheck, Sparkles, Zap } from 'lucide-react'
 
 const steps = [
@@ -10,7 +11,7 @@ const steps = [
 export default function LoadingOverlay({ open, stage = 'reading', progress = 0, message = '' }) {
   if (!open) return null
   const current = Math.max(0, steps.findIndex(s => s.id === stage))
-  return <div className="loading-backdrop loading-electric" role="status" aria-live="polite">
+  const overlay = <div className="loading-backdrop loading-electric" role="status" aria-live="polite">
     <div className="loading-noise"/><div className="loading-beam beam-a"/><div className="loading-beam beam-b"/>
     <div className="loading-panel animate-pop electric-loading-panel">
       <div className="loading-orb-wrap electric-orb-wrap">
@@ -34,4 +35,5 @@ export default function LoadingOverlay({ open, stage = 'reading', progress = 0, 
       <div className="loading-security"><ShieldCheck size={14}/>O PDF original permanece no navegador. Apenas o texto extraído é enviado ao serviço de análise.</div>
     </div>
   </div>
+  return typeof document==='undefined' ? overlay : createPortal(overlay, document.body)
 }
