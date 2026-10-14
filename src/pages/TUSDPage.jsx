@@ -1,2 +1,5 @@
 import TariffComponentPage from './TariffComponentPage'
-export default function TUSDPage(props)esturn <TariffComponentPage 
+
+export default function TUSDPage(props){
+  return <TariffComponentPage {...props} type="TUSD"/>
+}
