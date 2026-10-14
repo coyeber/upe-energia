@@ -38,6 +38,7 @@ function tariffSlot(slot={}){
   return {
     consumoKwh,
     demandaFaturadaKw:firstNumber(slot.demanda_faturada_kw),
+    demandaAtivaKw:firstNumber(slot.demanda_ativa_kw),
     demandaMaximaKw:firstNumber(slot.demanda_maxima_kw),
     teKwh,
     teValor,
