@@ -60,7 +60,25 @@ function normalize(data = {}) {
 }
 
 function extractText(payload){const parts=payload?.candidates?.[0]?.content?.parts;return Array.isArray(parts)?parts.map(p=>p?.text||'').join('').trim():''}
-function safeJson(value=''){const clean=String(value).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/i,'').trim();try{return JSON.parse(clean)}catch{}const first=clean.indexOf('{'),last=clean.lastIndexOf('}');if(first>=0&&last>first)return JSON.parse(clean.slice(first,last+1));throw new Error('O serviço de análise não retornou JSON válido.')}
+function repairJsonText(value=''){
+  return String(value)
+    .replace(/:\s*-(?=\s*[,}\]])/g,': null')
+    .replace(/([,\[])\s*-(?=\s*[,}\]])/g,'$1 null')
+    .replace(/:\s*(?:NaN|undefined|Infinity|-Infinity)(?=\s*[,}\]])/g,': null')
+    .replace(/([,\[])\s*(?:NaN|undefined|Infinity|-Infinity)(?=\s*[,}\]])/g,'$1 null')
+    .replace(/,\s*([}\]])/g,'$1')
+}
+function safeJson(value=''){
+  const clean=String(value).replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/i,'').trim()
+  const first=clean.indexOf('{'),last=clean.lastIndexOf('}')
+  const candidates=[clean]
+  if(first>=0&&last>first&&!(first===0&&last===clean.length-1))candidates.push(clean.slice(first,last+1))
+  for(const candidate of candidates){
+    try{return JSON.parse(candidate)}catch{}
+    try{return JSON.parse(repairJsonText(candidate))}catch{}
+  }
+  throw new Error('A análise retornou dados em formato incompleto. Tente novamente.')
+}
 function normalizeModel(value){return String(value||DEFAULT_MODEL).trim().replace(/^models\//i,'').replace(/^\/+/, '')}
 
 export default async function handler(req,res){
@@ -76,7 +94,7 @@ Extraia com máxima fidelidade os dados da conta da POLI (Escola Politécnica de
 
 REGRAS OBRIGATÓRIAS:
 - Retorne SOMENTE JSON válido, sem markdown.
-- Nunca invente valores. Campo não encontrado = null ou array vazio.
+- Nunca invente valores. Campo não encontrado = null ou array vazio. NUNCA use apenas '-' (hífen), NaN, undefined ou Infinity como valor; use null.
 - kWh é energia; kW é demanda. Nunca misture as grandezas.
 - Valores monetários em número decimal. Datas em YYYY-MM-DD e referência em YYYY-MM.
 - Consumo faturado/pago e demanda faturada/paga devem ser extraídos explicitamente quando a fatura trouxer esses termos.
