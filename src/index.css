@@ -183,3 +183,8 @@
 .review-auto-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;background:#f7faff;border:1px solid #dde8f3}.review-auto-actions span{font-size:.62rem;color:#7a8899;font-weight:700}
 @media(max-width:1200px){.analysis-link-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.analysis-link-grid{grid-template-columns:1fr}.detail-hero{padding:22px 18px}.detail-year-filter{width:100%;justify-content:space-between}.tariff-navigation-note{align-items:flex-start;flex-direction:column}.analysis-link-card{grid-template-columns:42px 1fr 20px}.detail-metric strong{font-size:1rem}.review-auto-actions{align-items:flex-start;flex-direction:column}}
+
+.metric-subvalues{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid #e8eef5}
+.metric-subvalues span{min-width:0;padding:7px 8px;border-radius:9px;background:#f7faff;border:1px solid #e5edf6}
+.metric-subvalues small{display:block;font-size:.5rem;line-height:1.25;color:#7d8a9a;font-weight:800;text-transform:uppercase}
+.metric-subvalues strong{display:block;margin-top:3px;font-size:.67rem;color:#16385f;font-weight:950;white-space:nowrap}
