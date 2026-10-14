@@ -6,7 +6,7 @@ Dashboard de acompanhamento energético da Escola Politécnica de Pernambuco (PO
 - Área construída: **8.860,00 m²**
 - Pessoas: **2.392** — referência **2025**
 - Endereço: **Rua Prof. Benedito Monteiro, 455**
-- Classificação: **A4 - Horo-Sazonal Verde - Poder Público**
+- Classificação: **A4 Livre Verde - Poder Público**
 
 ## Páginas principais
 - **Visão geral**: resumo executivo e atalhos clicáveis.
