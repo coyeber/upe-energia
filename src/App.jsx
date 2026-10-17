@@ -12,6 +12,7 @@ import ConsumptionPage from './pages/ConsumptionPage'
 import DemandPage from './pages/DemandPage'
 import TEPage from './pages/TEPage'
 import TUSDPage from './pages/TUSDPage'
+import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import AuthSetupScreen from './pages/AuthSetupScreen'
 import { useAuth } from './auth/AuthContext'
@@ -20,16 +21,19 @@ import { checkAnalysisService } from './services/analysisService'
 
 export default function App(){
  const {enabled:authEnabled,configured:authConfigured,loading:authLoading,session,user,signOut}=useAuth()
+ const [entryStage,setEntryStage]=useState('landing'),[previewAccess,setPreviewAccess]=useState(false)
  const [page,setPage]=useState('dashboard'),[bills,setBills]=useState(()=>getBills()),[status,setStatus]=useState('checking'),[health,setHealth]=useState(null),[boot,setBoot]=useState(true)
  useEffect(()=>{const min=new Promise(r=>setTimeout(r,2100));const healthReq=checkAnalysisService().then(h=>{setHealth(h);setStatus(h.apiKeyConfigured?'ready':'error')}).catch(()=>setStatus('error'));Promise.allSettled([min,healthReq]).then(()=>setBoot(false))},[])
  function saved(b){setBills(saveBill(b));setPage('dashboard')}
  function del(id){if(confirm('Excluir esta conta do navegador?'))setBills(deleteBill(id))}
+ if(entryStage==='landing')return <LandingPage onStart={()=>setEntryStage('access')}/>
  if(authEnabled&&!authConfigured)return <AuthSetupScreen/>
  if(authEnabled&&authLoading)return <AuthLoadingScreen/>
- if(authEnabled&&!session)return <LoginPage/>
+ if(authEnabled&&!session)return <LoginPage onBack={()=>setEntryStage('landing')}/>
+ if(!authEnabled&&!previewAccess)return <LoginPage previewMode onBack={()=>setEntryStage('landing')} onPreviewContinue={()=>setPreviewAccess(true)}/>
  if(boot)return <BootScreen/>
  return <div className="min-h-screen app-shell"><ElectricBackdrop/>
-  <header className="topbar"><div className="topbar-energy-flow"/><div className="topbar-inner"><div className="topbar-brand"><div className="brand-bolt"><Zap size={20} fill="currentColor"/></div><img src="/upe-logo.png" alt="Universidade de Pernambuco"/><span/><div className="brand-copy"><strong>POLI Energia</strong><small>Escola Politécnica de Pernambuco</small><div className="topbar-identification"><em><MapPin size={11}/>Rua Prof. Benedito Monteiro, 455</em><em><Building2 size={11}/>A4 Livre Verde - Poder Público</em></div></div></div><div className="topbar-actions"><span className="live-energy"><i/><Activity size={13}/> Monitoramento ativo</span><ServiceStatus status={status}/><span className="top-count"><Wifi size={14}/>{bills.length} conta{bills.length===1?'':'s'}</span>{authEnabled&&user&&<div className="account-chip"><UserRound size={15}/><span>{user.email}</span><button type="button" onClick={signOut} title="Sair do sistema" aria-label="Sair do sistema"><LogOut size={15}/></button></div>}</div></div><div className="topbar-red"/></header>
+  <header className="topbar"><div className="topbar-energy-flow"/><div className="topbar-inner"><div className="topbar-brand"><div className="brand-bolt"><Zap size={20} fill="currentColor"/></div><img src="/upe-logo.png" alt="Universidade de Pernambuco"/><span/><div className="brand-copy"><strong>POLI Energia</strong><small>Escola Politécnica de Pernambuco</small><div className="topbar-identification"><em><MapPin size={11}/>Rua Prof. Benedito Monteiro, 455</em><em><Building2 size={11}/>A4 Livre Verde - Poder Público</em></div></div></div><div className="topbar-actions"><span className="live-energy"><i/><Activity size={13}/> Monitoramento ativo</span><ServiceStatus status={status}/><span className="top-count"><Wifi size={14}/>{bills.length} conta{bills.length===1?'':'s'}</span>{authEnabled&&user&&<div className="account-chip"><UserRound size={15}/><span>{user.email}</span><button type="button" onClick={async()=>{await signOut();setPreviewAccess(false);setEntryStage('access')}} title="Sair do sistema" aria-label="Sair do sistema"><LogOut size={15}/></button></div>}</div></div><div className="topbar-red"/></header>
   {status==='error'&&<div className="system-alert"><div><ShieldCheck size={16}/>{health?.apiKeyConfigured===false?'Configure o serviço de análise no Vercel para ativar o processamento.':'Não foi possível verificar o serviço de análise agora.'}</div></div>}
   <main className="main-layout"><Sidebar page={page} setPage={setPage} count={bills.length}/><section key={page} className="min-w-0 flex-1 page-switch">{page==='dashboard'&&<DashboardPage bills={bills} onAdd={()=>setPage('upload')} onNavigate={setPage}/>} {page==='consumption'&&<ConsumptionPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='demand'&&<DemandPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='te'&&<TEPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='tusd'&&<TUSDPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='upload'&&<UploadPage onSaved={saved}/>} {page==='analysis'&&<AnalysisPage bills={bills}/>} {page==='report'&&<ReportPage bills={bills}/>} {page==='history'&&<HistoryPage bills={bills} onDelete={del}/>}</section></main>
   <footer className="site-footer"><div><span>POLI Energia • Gestão e análise de consumo elétrico</span><span>Processamento seguro via backend • PDF original não é armazenado</span></div></footer>
