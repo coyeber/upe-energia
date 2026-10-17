@@ -11,7 +11,7 @@ Dashboard de acompanhamento energético da Escola Politécnica de Pernambuco (PO
 ## Páginas principais
 - **Visão geral**: resumo executivo e atalhos clicáveis.
 - **Consumo**: histórico mensal, Ponta (17h30–20h30), Fora de Ponta, média anual tracejada, kWh/m² e kWh per capita.
-- **Demanda**: um gráfico dedicado com demanda faturada/paga, limite contratado tracejado, média anual tracejada e quadro de ultrapassagens com valores quando identificados na fatura.
+- **Demanda**: um gráfico dedicado apenas à Demanda máxima Ponta e Demanda máxima Fora de Ponta, com demanda contratada tracejada, médias anuais e quadro de ultrapassagens.
 - **TE**: quantidade e custo de Tarifa de Energia, separados em Ponta e Fora de Ponta, com médias anuais tracejadas.
 - **TUSD**: quantidade e custo de Tarifa de Uso do Sistema de Distribuição, separados em Ponta e Fora de Ponta, com médias anuais tracejadas.
 - **Enviar conta**: extração automática do PDF; a revisão detalhada é opcional.
