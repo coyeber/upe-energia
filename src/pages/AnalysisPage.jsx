@@ -32,7 +32,7 @@ export default function AnalysisPage({bills}){
   {icon:Target,title:'Meta de consumo',value:targetKwh?`${num(targetKwh)} kWh`:'—',text:dailyGoal?`Meta operacional aproximada de ${num(dailyGoal,2)} kWh/dia.`:'A meta depende de consumo e dias.'},
   {icon:PiggyBank,title:'Economia mensal simulada',value:brl(savingMonthly),text:`Simulação matemática de redução de ${target}% sobre uma fatura semelhante.`},
   {icon:Leaf,title:'Economia anual simulada',value:brl(savingAnnual),text:'Projeção simples para 12 meses.'},
-  {icon:Gauge,title:'Demanda faturada/paga',value:fin.demandaFaturadaKw!=null?`${num(fin.demandaFaturadaKw,1)} kW`:'Não informada',text:'Demanda cobrada/faturada quando explicitamente identificada.'},
+  {icon:Gauge,title:'Demanda máxima',value:Math.max(fin.ponta?.demandaMaximaKw??-Infinity,fin.foraPonta?.demandaMaximaKw??-Infinity,bill.demanda_kw??-Infinity)!==-Infinity?`${num(Math.max(fin.ponta?.demandaMaximaKw??-Infinity,fin.foraPonta?.demandaMaximaKw??-Infinity,bill.demanda_kw??-Infinity),1)} kW`:'Não informada',text:'Maior demanda identificada entre Ponta e Fora de Ponta.'},
   {icon:ShieldAlert,title:'Risco de ultrapassagem',value:demandExcess==null?'Sem base':demandExcess>0?`${num(demandExcess,1)} kW acima`:'Dentro do contratado',text:'Só caracteriza cobrança se a fatura trouxer evidência explícita.'},
   {icon:Landmark,title:'Multas',value:fin.multasTotal!=null?brl(fin.multasTotal):'Não informado',text:`Quantidade identificada: ${fin.multasCount==null?'—':fin.multasCount}.`},
   {icon:ReceiptText,title:'Impostos',value:fin.impostosTotal!=null?brl(fin.impostosTotal):'Não informado',text:`Quantidade identificada: ${fin.impostosCount==null?'—':fin.impostosCount}.`},
