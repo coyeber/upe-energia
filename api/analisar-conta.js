@@ -18,8 +18,6 @@ const text = v => v === null || v === undefined || v === '' ? null : String(v)
 const moneyItems = v => arr(v).map(x=>({descricao:text(x?.descricao)||'Item',valor:asNumber(x?.valor)})).filter(x=>x.valor!==null)
 const tariff = v => ({
   consumo_kwh: asNumber(v?.consumo_kwh),
-  demanda_faturada_kw: asNumber(v?.demanda_faturada_kw),
-  demanda_ativa_kw: asNumber(v?.demanda_ativa_kw),
   demanda_maxima_kw: asNumber(v?.demanda_maxima_kw),
   te_consumo_kwh: asNumber(v?.te_consumo_kwh),
   te_valor: asNumber(v?.te_valor),
@@ -39,7 +37,7 @@ function normalize(data = {}) {
     periodo_leitura_fim: text(data.periodo_leitura_fim), proxima_leitura: text(data.proxima_leitura), dias_faturados: asNumber(data.dias_faturados),
     leitura_anterior: asNumber(data.leitura_anterior), leitura_atual: asNumber(data.leitura_atual), consumo_kwh: asNumber(data.consumo_kwh),
     consumo_faturado_kwh: asNumber(data.consumo_faturado_kwh), demanda_kw: asNumber(data.demanda_kw),
-    demanda_faturada_kw: asNumber(data.demanda_faturada_kw), demanda_contratada_kw: asNumber(data.demanda_contratada_kw),
+    demanda_faturada_kw: asNumber(data.demanda_kw) ?? asNumber(data.demanda_faturada_kw), demanda_contratada_kw: asNumber(data.demanda_contratada_kw),
     demanda_ultrapassagem_kw: asNumber(data.demanda_ultrapassagem_kw), demanda_ultrapassagem_valor: asNumber(data.demanda_ultrapassagem_valor),
     valor_total: asNumber(data.valor_total), classe_consumidora: text(data.classe_consumidora), tipo_fornecimento: text(data.tipo_fornecimento),
     bandeira_tarifaria: text(data.bandeira_tarifaria), iluminacao_publica_valor: asNumber(data.iluminacao_publica_valor),
@@ -97,13 +95,16 @@ REGRAS OBRIGATÓRIAS:
 - Nunca invente valores. Campo não encontrado = null ou array vazio. NUNCA use apenas '-' (hífen), NaN, undefined ou Infinity como valor; use null.
 - kWh é energia; kW é demanda. Nunca misture as grandezas.
 - Valores monetários em número decimal. Datas em YYYY-MM-DD e referência em YYYY-MM.
-- Consumo faturado/pago e demanda faturada/paga devem ser extraídos explicitamente quando a fatura trouxer esses termos.
+- Consumo faturado/pago deve ser extraído quando a fatura trouxer esse termo.
+- A demanda geral da conta deve ir em demanda_kw. Não crie campos duplicados de demanda faturada por posto.
 - A unidade é A4 Livre Verde - Poder Público. Preserve a separação tarifária: PONTA (P) = 17h30 às 20h30; FORA DE PONTA (FP) = demais horários.
 - NUNCA some Ponta e Fora de Ponta dentro dos campos tarifários. Extraia cada posto separadamente.
-- Para Ponta e Fora de Ponta, identifique separadamente consumo kWh, TE, TUSD, demanda faturada, DEMANDA ATIVA e DEMANDA MÁXIMA se existirem.
-- Procure explicitamente na fatura os campos de demanda ativa e demanda máxima na Ponta e Fora de Ponta. Demanda ativa, demanda máxima e demanda contratada são campos distintos e não devem ser misturados.
+- Para Ponta e Fora de Ponta, identifique separadamente consumo kWh, TE, TUSD e somente a DEMANDA MÁXIMA em kW.
+- NÃO extraia "demanda ativa" e NÃO crie "demanda faturada/paga" dentro de Ponta ou Fora de Ponta. Esses campos geravam duplicidade e confusão.
+- demanda_maxima_kw é o único campo de demanda de cada posto tarifário e nunca deve ser confundido com demanda_contratada_kw.
 - TE = Tarifa de Energia; TUSD = Tarifa de Uso do Sistema de Distribuição. Não agregue uma na outra e não crie um custo efetivo único somando TE + TUSD.
-- Se a fatura informar quantidades próprias para TE e TUSD, extraia te_consumo_kwh e tusd_consumo_kwh. Se não informar, deixe null; o dashboard poderá usar o consumo do posto apenas como fallback explícito.
+- te_consumo_kwh e tusd_consumo_kwh aceitam SOMENTE valores cuja unidade seja kWh. Nunca coloque um valor em kW nesses campos. Se a linha de TUSD representar demanda em kW, não use esse número como Quantidade TUSD (kWh); deixe tusd_consumo_kwh como null.
+- Se a fatura informar quantidades próprias de energia em kWh para TE e TUSD, extraia-as. Se não informar, deixe null; o dashboard poderá usar o consumo do posto apenas como fallback explícito.
 - NÃO calcule custo efetivo no backend. O dashboard calcula separadamente: TE efetiva = TE (R$) ÷ kWh da TE do posto; TUSD efetiva = TUSD (R$) ÷ kWh da TUSD do posto. Ponta e Fora de Ponta nunca são misturados nesse cálculo.
 - Identifique cobranças de iluminação pública, multas e impostos separadamente. Multa só deve ser classificada como multa se a descrição da fatura indicar multa/penalidade/ultrapassagem/mora.
 - Extraia TODO o histórico mensal de consumo existente.
@@ -117,15 +118,15 @@ JSON ESPERADO:
 {
  "concessionaria":string|null,"unidade_consumidora":string|null,"mes_referencia":string|null,"data_emissao":string|null,"data_vencimento":string|null,
  "periodo_leitura_inicio":string|null,"periodo_leitura_fim":string|null,"proxima_leitura":string|null,"dias_faturados":number|null,"leitura_anterior":number|null,"leitura_atual":number|null,
- "consumo_kwh":number|null,"consumo_faturado_kwh":number|null,"demanda_kw":number|null,"demanda_faturada_kw":number|null,"demanda_contratada_kw":number|null,"demanda_ultrapassagem_kw":number|null,"demanda_ultrapassagem_valor":number|null,"valor_total":number|null,
+ "consumo_kwh":number|null,"consumo_faturado_kwh":number|null,"demanda_kw":number|null,"demanda_contratada_kw":number|null,"demanda_ultrapassagem_kw":number|null,"demanda_ultrapassagem_valor":number|null,"valor_total":number|null,
  "classe_consumidora":string|null,"tipo_fornecimento":string|null,"bandeira_tarifaria":string|null,"iluminacao_publica_valor":number|null,
  "multas":[{"descricao":string,"valor":number}],"multas_total":number|null,"impostos":[{"descricao":string,"valor":number}],"impostos_total":number|null,
  "tarifas_horarias":{
-   "ponta":{"consumo_kwh":number|null,"demanda_faturada_kw":number|null,"demanda_ativa_kw":number|null,"demanda_maxima_kw":number|null,"te_consumo_kwh":number|null,"te_valor":number|null,"te_tarifa":number|null,"tusd_consumo_kwh":number|null,"tusd_valor":number|null,"tusd_tarifa":number|null},
-   "fora_ponta":{"consumo_kwh":number|null,"demanda_faturada_kw":number|null,"demanda_ativa_kw":number|null,"demanda_maxima_kw":number|null,"te_consumo_kwh":number|null,"te_valor":number|null,"te_tarifa":number|null,"tusd_consumo_kwh":number|null,"tusd_valor":number|null,"tusd_tarifa":number|null}
+   "ponta":{"consumo_kwh":number|null,"demanda_maxima_kw":number|null,"te_consumo_kwh":number|null,"te_valor":number|null,"te_tarifa":number|null,"tusd_consumo_kwh":number|null,"tusd_valor":number|null,"tusd_tarifa":number|null},
+   "fora_ponta":{"consumo_kwh":number|null,"demanda_maxima_kw":number|null,"te_consumo_kwh":number|null,"te_valor":number|null,"te_tarifa":number|null,"tusd_consumo_kwh":number|null,"tusd_valor":number|null,"tusd_tarifa":number|null}
  },
  "historico_consumo":[{"mes":"YYYY-MM","kwh":number,"dias":number|null}],
- "historico_demanda":[{"mes":"YYYY-MM","demanda_faturada_kw":number|null,"demanda_contratada_kw":number|null,"demanda_maxima_ponta_kw":number|null,"demanda_maxima_fora_ponta_kw":number|null,"ultrapassagem_kw":number|null,"ultrapassagem_valor":number|null}],
+ "historico_demanda":[{"mes":"YYYY-MM","demanda_contratada_kw":number|null,"demanda_maxima_ponta_kw":number|null,"demanda_maxima_fora_ponta_kw":number|null,"ultrapassagem_kw":number|null,"ultrapassagem_valor":number|null}],
  "campos_extras":[{"nome":string,"valor":string|null,"unidade":string|null}],
  "componentes_fatura":[{"nome":string,"valor":number|null,"unidade":string|null,"quantidade":number|null}],
  "diagnostico":{"resumo":string,"leitura_executiva":string,"causas_provaveis":[string],"acoes_prioritarias":[string],"oportunidades_economia":[string],"alertas":[string],"observacoes_tecnicas":[string]},
