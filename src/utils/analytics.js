@@ -37,8 +37,6 @@ function tariffSlot(slot={}){
   const tusdValor=firstNumber(slot.tusd_valor)
   return {
     consumoKwh,
-    demandaFaturadaKw:firstNumber(slot.demanda_faturada_kw),
-    demandaAtivaKw:firstNumber(slot.demanda_ativa_kw),
     demandaMaximaKw:firstNumber(slot.demanda_maxima_kw),
     teKwh,
     teValor,
@@ -54,7 +52,7 @@ function tariffSlot(slot={}){
 export function billFinancials(bill={}){
   const ponta=tariffSlot(bill.tarifas_horarias?.ponta||{})
   const foraPonta=tariffSlot(bill.tarifas_horarias?.fora_ponta||{})
-  const demandaFaturadaKw=firstNumber(bill.demanda_faturada_kw,ponta.demandaFaturadaKw,foraPonta.demandaFaturadaKw)
+  const demandaFaturadaKw=firstNumber(bill.demanda_kw,bill.demanda_faturada_kw)
   return {
     consumoFaturadoKwh:firstNumber(bill.consumo_faturado_kwh),
     demandaFaturadaKw,
@@ -134,9 +132,11 @@ export function buildAnnualSeries(monthly=[]){
     const energy=firstNumber(m.consumoFaturadoKwh,m.kwh)
     if(energy!==null){y.consumo+=energy;y.mesesConsumo+=1}
     if(n(m.valor)!==null){y.gasto+=n(m.valor);y.mesesFaturados+=1}
-    if(n(m.demanda)!==null)y.demandaMax=y.demandaMax==null?n(m.demanda):Math.max(y.demandaMax,n(m.demanda))
-    if(n(m.demandaFaturadaKw)!==null)y.demandaFaturadaMax=y.demandaFaturadaMax==null?n(m.demandaFaturadaKw):Math.max(y.demandaFaturadaMax,n(m.demandaFaturadaKw))
-    const exceeded = (n(m.demandaUltrapassagemKw)!==null && n(m.demandaUltrapassagemKw)>0) || (n(m.demandaFaturadaKw)!==null && n(m.demandaContratada)!==null && n(m.demandaFaturadaKw)>n(m.demandaContratada))
+    const maxP=n(m.demandaMaximaPontaKw??m.ponta?.demandaMaximaKw),maxFP=n(m.demandaMaximaForaPontaKw??m.foraPonta?.demandaMaximaKw),generalD=n(m.demanda)
+    const monthMax=[maxP,maxFP,generalD].filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null)
+    if(monthMax!==null)y.demandaMax=y.demandaMax==null?monthMax:Math.max(y.demandaMax,monthMax)
+    if(monthMax!==null)y.demandaFaturadaMax=y.demandaFaturadaMax==null?monthMax:Math.max(y.demandaFaturadaMax,monthMax)
+    const exceeded = (n(m.demandaUltrapassagemKw)!==null && n(m.demandaUltrapassagemKw)>0) || (monthMax!==null && n(m.demandaContratada)!==null && monthMax>n(m.demandaContratada))
     if(exceeded){y.ultrapassagens+=1;y._hasUltrapassagem=true}
     if(n(m.demandaUltrapassagemValor)!==null){y.ultrapassagemValor+=n(m.demandaUltrapassagemValor);y._hasUltrapassagem=true}
     if(n(m.consumoDiario)!==null)y._daily.push(n(m.consumoDiario))
@@ -197,14 +197,13 @@ export function scopeEnergyMetrics(rows=[]){
   const tariffAggregate=(slotName)=>{
     const slots=rows.map(x=>x?.[slotName]).filter(Boolean)
     const consumo=sumNullable(slots.map(x=>x.consumoKwh))
-    const demandaMax=slots.map(x=>n(x.demandaFaturadaKw)).filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null)
     const demandaMaximaInformada=slots.map(x=>n(x.demandaMaximaKw)).filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null)
     const teValor=sumNullable(slots.map(x=>x.teValor))
     const teKwh=sumNullable(slots.map(x=>x.teKwh))
     const tusdValor=sumNullable(slots.map(x=>x.tusdValor))
     const tusdKwh=sumNullable(slots.map(x=>x.tusdKwh))
     return {
-      consumo,demandaMax,demandaMaximaInformada,teValor,teKwh,tusdValor,tusdKwh,
+      consumo,demandaMaximaInformada,teValor,teKwh,tusdValor,tusdKwh,
       teCustoEfetivoKwh:teValor!=null&&teKwh>0?teValor/teKwh:null,
       tusdCustoEfetivoKwh:tusdValor!=null&&tusdKwh>0?tusdValor/tusdKwh:null
     }
@@ -216,14 +215,13 @@ export function scopeEnergyMetrics(rows=[]){
     kwhM2:totalConsumption!=null?totalConsumption/POLI_AREA_M2:null,
     kwhPerCapita:totalConsumption!=null?totalConsumption/POLI_PEOPLE:null,
     consumoPago:sumNullable(rows.map(x=>x.consumoFaturadoKwh)),
-    demandaPagaMax:rows.map(x=>n(x.demandaFaturadaKw)).filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null),
+    demandaPagaMax:rows.map(x=>Math.max(n(x.demandaMaximaPontaKw)??-Infinity,n(x.demandaMaximaForaPontaKw)??-Infinity,n(x.demanda)??-Infinity)).filter(Number.isFinite).reduce((a,b)=>a==null?b:Math.max(a,b),null),
     multas:sumNullable(rows.map(x=>x.multasTotal)),
     impostos:sumNullable(rows.map(x=>x.impostosTotal)),
     multasCount:sumNullable(rows.map(x=>x.multasCount)),
     impostosCount:sumNullable(rows.map(x=>x.impostosCount)),
     iluminacao:sumNullable(rows.map(x=>x.iluminacaoPublica)),
     pontaConsumo:ponta.consumo,
-    pontaDemandaPaga:ponta.demandaMax,
     pontaDemandaMaxima:ponta.demandaMaximaInformada ?? rows.map(x=>n(x.demandaMaximaPontaKw)).filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null),
     pontaTE:ponta.teValor,
     pontaTEKwh:ponta.teKwh,
@@ -232,7 +230,6 @@ export function scopeEnergyMetrics(rows=[]){
     pontaTUSDKwh:ponta.tusdKwh,
     pontaTUSDCustoEfetivo:ponta.tusdCustoEfetivoKwh,
     foraPontaConsumo:foraPonta.consumo,
-    foraPontaDemandaPaga:foraPonta.demandaMax,
     foraPontaDemandaMaxima:foraPonta.demandaMaximaInformada ?? rows.map(x=>n(x.demandaMaximaForaPontaKw)).filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null),
     foraPontaTE:foraPonta.teValor,
     foraPontaTEKwh:foraPonta.teKwh,
@@ -246,7 +243,11 @@ export function scopeEnergyMetrics(rows=[]){
 export function yearRows(monthly=[],year){ return monthly.filter(x=>x.mes?.startsWith(String(year))).sort((a,b)=>a.mes.localeCompare(b.mes)) }
 export function annualAverage(rows=[],getter){ return average(rows.map(getter)) }
 export function demandExceeded(row){
-  const billed=n(row?.demandaFaturadaKw), contracted=n(row?.demandaContratada), explicit=n(row?.demandaUltrapassagemKw)
+  const p=n(row?.demandaMaximaPontaKw??row?.ponta?.demandaMaximaKw)
+  const fp=n(row?.demandaMaximaForaPontaKw??row?.foraPonta?.demandaMaximaKw)
+  const general=n(row?.demanda)
+  const maximum=[p,fp,general].filter(v=>v!==null).reduce((a,b)=>a==null?b:Math.max(a,b),null)
+  const contracted=n(row?.demandaContratada), explicit=n(row?.demandaUltrapassagemKw)
   if(explicit!==null) return explicit>0
-  return billed!==null&&contracted!==null&&billed>contracted
+  return maximum!==null&&contracted!==null&&maximum>contracted
 }
