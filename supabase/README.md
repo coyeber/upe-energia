@@ -17,10 +17,10 @@ Adicione no projeto:
 ```text
 VITE_AUTH_ENABLED=true
 VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-VITE_SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICA
+VITE_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICA
 ```
 
-A `VITE_SUPABASE_ANON_KEY` é a chave pública usada pelo cliente com RLS. Nunca use `service_role` no frontend.
+A `VITE_SUPABASE_PUBLISHABLE_KEY` é a Publishable Key usada pelo cliente com RLS. Nunca use `service_role` no frontend.
 
 ## 5. Redeploy
 Faça um novo deploy. O dashboard passará a exigir login.
