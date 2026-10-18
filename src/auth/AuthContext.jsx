@@ -43,6 +43,18 @@ export function AuthProvider({children}){
       if(!supabase) return {error:new Error('Supabase não configurado.')}
       return supabase.auth.signInWithPassword({email,password})
     },
+    async signUp(nome,email,password){
+      if(!supabase) return {error:new Error('Supabase não configurado.')}
+      const emailRedirectTo=typeof window!=='undefined'?window.location.origin:undefined
+      return supabase.auth.signUp({
+        email,
+        password,
+        options:{
+          data:{nome},
+          emailRedirectTo
+        }
+      })
+    },
     async signOut(){
       if(!supabase) return
       await supabase.auth.signOut()

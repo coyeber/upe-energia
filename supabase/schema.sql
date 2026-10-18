@@ -39,11 +39,6 @@ to authenticated
 using (auth.uid() = id);
 
 drop policy if exists "perfil proprio atualizacao" on public.profiles;
-create policy "perfil proprio atualizacao"
-on public.profiles for update
-to authenticated
-using (auth.uid() = id)
-with check (auth.uid() = id);
 
 drop policy if exists "usuarios autenticados leem contas" on public.contas_energia;
 create policy "usuarios autenticados leem contas"
@@ -57,18 +52,36 @@ on public.contas_energia for insert
 to authenticated
 with check (auth.uid() = criado_por);
 
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $
+  select exists(
+    select 1 from public.profiles
+    where id = auth.uid() and perfil = 'admin'
+  );
+$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
 drop policy if exists "usuarios autenticados atualizam contas" on public.contas_energia;
-create policy "usuarios autenticados atualizam contas"
+drop policy if exists "criador ou admin atualiza contas" on public.contas_energia;
+create policy "criador ou admin atualiza contas"
 on public.contas_energia for update
 to authenticated
-using (true)
-with check (true);
+using (auth.uid() = criado_por or public.is_admin())
+with check (auth.uid() = criado_por or public.is_admin());
 
 drop policy if exists "usuarios autenticados excluem contas" on public.contas_energia;
-create policy "usuarios autenticados excluem contas"
+drop policy if exists "criador ou admin exclui contas" on public.contas_energia;
+create policy "criador ou admin exclui contas"
 on public.contas_energia for delete
 to authenticated
-using (true);
+using (auth.uid() = criado_por or public.is_admin());
 
 create or replace function public.handle_new_user()
 returns trigger

@@ -476,3 +476,12 @@
  .auth2-points small{display:none}
 }
 
+
+/* Cadastro na tela de autenticação */
+.auth2-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;margin-top:20px;border:1px solid #dde5ee;background:#f3f6fa;border-radius:12px}
+.auth2-mode-tabs button{height:38px;border:0;border-radius:9px;background:transparent;color:#718096;display:flex;align-items:center;justify-content:center;gap:6px;font-size:.61rem;font-weight:900;cursor:pointer;transition:.16s}
+.auth2-mode-tabs button.active{background:#fff;color:#123b73;box-shadow:0 4px 12px rgba(18,59,115,.08)}
+.auth2-mode-tabs button:hover:not(.active){color:#123b73}
+.auth2-register-note{margin-top:13px;color:#7d8a99;font-size:.55rem;line-height:1.5}
+.auth2-register-note strong{color:#123b73}
+
