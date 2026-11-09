@@ -15,17 +15,21 @@ import TUSDPage from './pages/TUSDPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import AuthSetupScreen from './pages/AuthSetupScreen'
+import EmailActionPage from './pages/EmailActionPage'
 import { useAuth } from './auth/AuthContext'
 import { getBills,saveBill,deleteBill } from './data/storage'
 import { checkAnalysisService } from './services/analysisService'
 
 export default function App(){
+ const actionParams=new URLSearchParams(window.location.search)
+ const isFirebaseAction=Boolean(actionParams.get('mode')&&actionParams.get('oobCode'))
  const {enabled:authEnabled,configured:authConfigured,loading:authLoading,authError,session,user,signOut}=useAuth()
  const [entryStage,setEntryStage]=useState('landing'),[previewAccess,setPreviewAccess]=useState(false)
  const [page,setPage]=useState('dashboard'),[bills,setBills]=useState(()=>getBills()),[status,setStatus]=useState('checking'),[health,setHealth]=useState(null),[boot,setBoot]=useState(true)
  useEffect(()=>{const min=new Promise(r=>setTimeout(r,2100));const healthReq=checkAnalysisService().then(h=>{setHealth(h);setStatus(h.apiKeyConfigured?'ready':'error')}).catch(()=>setStatus('error'));Promise.allSettled([min,healthReq]).then(()=>setBoot(false))},[])
  function saved(b){setBills(saveBill(b));setPage('dashboard')}
  function del(id){if(confirm('Excluir esta conta do navegador?'))setBills(deleteBill(id))}
+ if(isFirebaseAction)return <EmailActionPage/>
  if(entryStage==='landing')return <LandingPage onStart={()=>setEntryStage('access')}/>
  if(authEnabled&&!authConfigured)return <AuthSetupScreen/>
  if(authEnabled&&authLoading)return <AuthLoadingScreen/>
