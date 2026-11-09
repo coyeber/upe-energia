@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -70,9 +71,21 @@ export function AuthProvider({children}){
       try{
         const result=await createUserWithEmailAndPassword(firebaseAuth,email,password)
         if(nome?.trim())await updateProfile(result.user,{displayName:nome.trim()})
+
+        firebaseAuth.languageCode='pt-BR'
+        let verificationEmailSent=true
+        let verificationEmailError=null
+        try{
+          await sendEmailVerification(result.user)
+        }catch(emailError){
+          verificationEmailSent=false
+          verificationEmailError=emailError
+          console.warn('Conta criada, mas o e-mail de verificação não foi enviado:',emailError)
+        }
+
         await result.user.reload()
         setFirebaseUser(firebaseAuth.currentUser)
-        return {data:result,error:null}
+        return {data:{...result,verificationEmailSent,verificationEmailError},error:null}
       }catch(error){
         return {data:null,error}
       }

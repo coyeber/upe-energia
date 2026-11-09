@@ -110,7 +110,7 @@ export default function LoginPage({onBack}){
           <div className="auth2-form-icon">{register?<UserPlus size={23}/>:<KeyRound size={23}/>}</div>
           <div className="auth2-overline">{register?'NOVO ACESSO':forgot?'RECUPERAÇÃO DE ACESSO':'ACESSO RESTRITO'}</div>
           <h2>{register?'Criar sua conta':forgot?'Recuperar senha':'Entrar no painel'}</h2>
-          <p className="auth2-copy">{register?'Cadastre seu nome, e-mail e senha. A conta entra no sistema imediatamente, sem exigir confirmação por e-mail.':forgot?'Informe o e-mail cadastrado para receber um link de redefinição de senha.':'Use seu e-mail e senha para acessar o POLI Energia.'}</p>
+          <p className="auth2-copy">{register?'Cadastre seu nome, e-mail e senha. Você entra no sistema imediatamente e recebe um e-mail para confirmar o endereço cadastrado.':forgot?'Informe o e-mail cadastrado para receber um link de redefinição de senha.':'Use seu e-mail e senha para acessar o POLI Energia.'}</p>
 
           {!forgot&&<div className="auth2-mode-tabs">
             <button type="button" className={mode==='login'?'active':''} onClick={()=>switchMode('login')}><KeyRound size={15}/> Entrar</button>
@@ -166,7 +166,7 @@ export default function LoginPage({onBack}){
 
           <div className="auth2-note">
             <ShieldCheck size={14}/>
-            <span>Autenticação gerenciada pelo Firebase. A recuperação de senha é enviada pelo próprio Firebase Authentication.</span>
+            <span>Autenticação gerenciada pelo Firebase. Novos cadastros recebem e-mail de verificação, sem bloquear o acesso ao painel.</span>
           </div>
         </div>
       </section>
