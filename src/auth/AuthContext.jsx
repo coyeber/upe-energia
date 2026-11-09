@@ -1,70 +1,68 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { AUTH_ENABLED, SUPABASE_CONFIGURED, supabase } from '../lib/supabase'
+import { createContext, useContext, useEffect, useMemo } from 'react'
+import { useAuth as useClerkAuth, useClerk, useSession, useUser } from '@clerk/react'
+import { AUTH_ENABLED, CLERK_CONFIGURED, SUPABASE_CONFIGURED, createClerkSupabaseClient } from '../lib/supabase'
 
-const AuthContext = createContext(null)
+const AuthContext=createContext(null)
 
 export function AuthProvider({children}){
-  const [session,setSession]=useState(null)
-  const [loading,setLoading]=useState(AUTH_ENABLED && SUPABASE_CONFIGURED)
+  if(!CLERK_CONFIGURED){
+    const value={
+      enabled:AUTH_ENABLED,
+      configured:false,
+      loading:false,
+      session:null,
+      user:null,
+      signOut:async()=>{}
+    }
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  }
+
+  return <ClerkAuthBridge>{children}</ClerkAuthBridge>
+}
+
+function ClerkAuthBridge({children}){
+  const {isLoaded,isSignedIn,sessionId}=useClerkAuth()
+  const {user}=useUser()
+  const {session}=useSession()
+  const clerk=useClerk()
 
   useEffect(()=>{
-    if(!AUTH_ENABLED || !SUPABASE_CONFIGURED || !supabase){
-      setLoading(false)
-      return
+    if(!isLoaded || !isSignedIn || !session || !user || !SUPABASE_CONFIGURED) return
+
+    const client=createClerkSupabaseClient(session)
+    if(!client) return
+
+    const email=user.primaryEmailAddress?.emailAddress || ''
+    const nome=user.fullName || user.firstName || email.split('@')[0] || 'Usuário'
+
+    client
+      .from('clerk_profiles')
+      .upsert({user_id:user.id,nome},{onConflict:'user_id'})
+      .then(({error})=>{
+        if(error) console.warn('Perfil Clerk ainda não sincronizado com Supabase:',error.message)
+      })
+  },[isLoaded,isSignedIn,session,user])
+
+  const appUser=useMemo(()=>{
+    if(!user) return null
+    return {
+      id:user.id,
+      email:user.primaryEmailAddress?.emailAddress || '',
+      name:user.fullName || user.firstName || '',
+      imageUrl:user.imageUrl
     }
-
-    let mounted=true
-    supabase.auth.getSession().then(({data,error})=>{
-      if(!mounted)return
-      if(error) console.error('Erro ao recuperar sessão:',error)
-      setSession(data?.session || null)
-      setLoading(false)
-    })
-
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,nextSession)=>{
-      if(!mounted)return
-      setSession(nextSession || null)
-      setLoading(false)
-    })
-
-    return ()=>{
-      mounted=false
-      subscription?.unsubscribe()
-    }
-  },[])
+  },[user])
 
   const value=useMemo(()=>({
     enabled:AUTH_ENABLED,
-    configured:SUPABASE_CONFIGURED,
-    loading,
-    session,
-    user:session?.user || null,
-    async signIn(email,password){
-      if(!supabase) return {error:new Error('Supabase não configurado.')}
-      return supabase.auth.signInWithPassword({email,password})
-    },
-    async signUp(nome,email,password){
-      if(!supabase) return {error:new Error('Supabase não configurado.')}
-      const emailRedirectTo=typeof window!=='undefined'?window.location.origin:undefined
-      return supabase.auth.signUp({
-        email,
-        password,
-        options:{
-          data:{nome},
-          emailRedirectTo
-        }
-      })
-    },
+    configured:CLERK_CONFIGURED,
+    loading:!isLoaded,
+    session:isSignedIn?{id:sessionId}:null,
+    user:appUser,
     async signOut(){
-      if(!supabase) return
-      await supabase.auth.signOut()
-    },
-    async resetPassword(email){
-      if(!supabase) return {error:new Error('Supabase não configurado.')}
-      const redirectTo=typeof window!=='undefined'?window.location.origin:undefined
-      return supabase.auth.resetPasswordForEmail(email,{redirectTo})
+      await clerk.signOut()
     }
-  }),[loading,session])
+  }),[isLoaded,isSignedIn,sessionId,appUser,clerk])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -1,79 +1,53 @@
 import { useState } from 'react'
-import { ArrowLeft, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound, Wrench, Zap } from 'lucide-react'
-import { useAuth } from '../auth/AuthContext'
+import { SignIn, SignUp } from '@clerk/react'
+import { ArrowLeft, KeyRound, LockKeyhole, ShieldCheck, UserPlus, Zap } from 'lucide-react'
+
+const appearance={
+  variables:{
+    colorPrimary:'#123b73',
+    colorText:'#17395f',
+    colorTextSecondary:'#6f8094',
+    colorBackground:'#ffffff',
+    colorInputBackground:'#f9fbfd',
+    colorInputText:'#17395f',
+    borderRadius:'12px',
+    fontFamily:'Inter, ui-sans-serif, system-ui, sans-serif'
+  },
+  elements:{
+    rootBox:{width:'100%'},
+    cardBox:{width:'100%',boxShadow:'none'},
+    card:{width:'100%',boxShadow:'none',padding:'0',background:'transparent'},
+    header:{display:'none'},
+    socialButtonsBlockButton:{border:'1px solid #dbe4ed',boxShadow:'none'},
+    formFieldLabel:{color:'#41566f',fontWeight:'800',fontSize:'12px'},
+    formFieldInput:{height:'50px',border:'1px solid #d5dfeb',boxShadow:'none'},
+    formButtonPrimary:{height:'50px',background:'#ed1c2e',fontWeight:'900',boxShadow:'0 10px 22px rgba(237,28,46,.16)'},
+    footer:{marginTop:'16px'},
+    footerActionText:{color:'#7d8a99'},
+    footerActionLink:{color:'#123b73',fontWeight:'900'},
+    identityPreviewEditButton:{color:'#123b73'},
+    formResendCodeLink:{color:'#123b73',fontWeight:'800'}
+  }
+}
 
 export default function LoginPage({onBack,previewMode=false,onPreviewContinue}){
-  const {signIn,signUp,resetPassword}=useAuth()
   const [mode,setMode]=useState('login')
-  const [name,setName]=useState('')
-  const [email,setEmail]=useState('')
-  const [password,setPassword]=useState('')
-  const [confirmPassword,setConfirmPassword]=useState('')
-  const [showPassword,setShowPassword]=useState(false)
-  const [busy,setBusy]=useState(false)
-  const [error,setError]=useState('')
-  const [message,setMessage]=useState('')
-  const [forgot,setForgot]=useState(false)
 
-  async function submit(e){
-    e.preventDefault()
-    setError('')
-    setMessage('')
-
-    if(previewMode){
-      onPreviewContinue?.()
-      return
-    }
-
-    const cleanEmail=email.trim().toLowerCase()
-    if(!cleanEmail){setError('Informe seu e-mail.');return}
-
-    if(mode==='register'){
-      const cleanName=name.trim()
-      if(!cleanName){setError('Informe seu nome.');return}
-      if(password.length<8){setError('A senha deve ter pelo menos 8 caracteres.');return}
-      if(password!==confirmPassword){setError('As senhas não coincidem.');return}
-
-      setBusy(true)
-      const {data,error}=await signUp(cleanName,cleanEmail,password)
-      setBusy(false)
-
-      if(error){
-        const already=/already registered|already been registered|user already exists/i.test(error.message||'')
-        setError(already?'Este e-mail já possui uma conta.':'Não foi possível criar a conta agora. Verifique os dados e tente novamente.')
-        return
-      }
-
-      if(data?.session){
-        setMessage('Conta criada com sucesso. Você já está autenticado.')
-      }else{
-        setMessage('Conta criada. Verifique seu e-mail para confirmar o cadastro antes de entrar.')
-        setMode('login')
-        setPassword('')
-        setConfirmPassword('')
-      }
-      return
-    }
-
-    if(forgot){
-      setBusy(true)
-      const {error}=await resetPassword(cleanEmail)
-      setBusy(false)
-      if(error){setError('Não foi possível enviar a recuperação de senha.');return}
-      setMessage('Se o e-mail estiver cadastrado, você receberá as instruções para redefinir a senha.')
-      return
-    }
-
-    if(!password){setError('Informe sua senha.');return}
-
-    setBusy(true)
-    const {error}=await signIn(cleanEmail,password)
-    setBusy(false)
-
-    if(error){
-      const invalid=/invalid login credentials/i.test(error.message||'')
-      setError(invalid?'E-mail ou senha incorretos.':'Não foi possível entrar agora. Tente novamente.')
-    }
+  if(previewMode){
+    return <main className="auth2-page">
+      <div className="auth2-bg-grid"/>
+      <div className="auth2-topbar">{onBack&&<button className="auth2-back" type="button" onClick={onBack}><ArrowLeft size={16}/> Voltar ao início</button>}</div>
+      <section className="auth2-card">
+        <InfoPanel/>
+        <section className="auth2-form-side"><div className="auth2-form-wrap">
+          <div className="auth2-form-icon"><KeyRound size={23}/></div>
+          <div className="auth2-overline">MODO DE TESTE</div>
+          <h2>Acessar o painel</h2>
+          <p className="auth2-copy">O login real ainda não está configurado neste ambiente.</p>
+          <button className="auth2-submit" type="button" onClick={onPreviewContinue}>Acessar painel temporariamente</button>
+        </div></section>
+      </section>
+    </main>
   }
 
   return <main className="auth2-page">
@@ -82,145 +56,56 @@ export default function LoginPage({onBack,previewMode=false,onPreviewContinue}){
     <div className="auth2-bg-orb auth2-bg-orb-b"/>
 
     <div className="auth2-topbar">
-      {onBack&&<button className="auth2-back" type="button" onClick={onBack}>
-        <ArrowLeft size={16}/> Voltar ao início
-      </button>}
+      {onBack&&<button className="auth2-back" type="button" onClick={onBack}><ArrowLeft size={16}/> Voltar ao início</button>}
     </div>
 
     <section className="auth2-card">
-      <aside className="auth2-info">
-        <div className="auth2-brand">
-          <img src="/upe-logo.png" alt="Universidade de Pernambuco"/>
-          <span/>
-          <div>
-            <strong>POLI Energia</strong>
-            <small>Escola Politécnica de Pernambuco</small>
-          </div>
-        </div>
-
-        <div className="auth2-info-content">
-          <div className="auth2-mark"><Zap size={34} fill="currentColor"/></div>
-          <div className="auth2-kicker">SISTEMA DE GESTÃO ENERGÉTICA</div>
-          <h1>Acesse o painel energético da POLI.</h1>
-          <p>Consulte consumo, demanda máxima, Ponta, Fora de Ponta, TE, TUSD e relatórios em um ambiente seguro, claro e organizado.</p>
-
-          <div className="auth2-points">
-            <div><ShieldCheck size={16}/><span><strong>Acesso autenticado</strong><small>Entrada restrita a usuários autorizados.</small></span></div>
-            <div><LockKeyhole size={16}/><span><strong>Sessão protegida</strong><small>Seu acesso permanece vinculado à sessão autenticada.</small></span></div>
-          </div>
-        </div>
-
-        <div className="auth2-info-footer">
-          <span>POLI Energia</span>
-          <span>Gestão e análise de consumo elétrico</span>
-        </div>
-      </aside>
+      <InfoPanel/>
 
       <section className="auth2-form-side">
-        <div className="auth2-form-wrap">
+        <div className="auth2-form-wrap clerk-auth-wrap">
           <div className="auth2-form-icon">{mode==='register'?<UserPlus size={23}/>:<KeyRound size={23}/>}</div>
           <div className="auth2-overline">{mode==='register'?'NOVO ACESSO':'ACESSO RESTRITO'}</div>
-          <h2>{forgot?'Recuperar senha':mode==='register'?'Criar sua conta':'Entrar no painel'}</h2>
-          <p className="auth2-copy">{forgot?'Informe seu e-mail para receber as instruções de recuperação.':mode==='register'?'Cadastre seus dados para criar um acesso ao POLI Energia.':'Use o e-mail e a senha cadastrados para acessar o POLI Energia.'}</p>
+          <h2>{mode==='register'?'Criar sua conta':'Entrar no painel'}</h2>
+          <p className="auth2-copy">{mode==='register'?'Crie seu perfil para acessar o POLI Energia. O Clerk cuidará da verificação e segurança do cadastro.':'Entre com seu e-mail e senha para acessar o POLI Energia.'}</p>
 
-          {!forgot&&!previewMode&&<div className="auth2-mode-tabs">
-            <button type="button" className={mode==='login'?'active':''} onClick={()=>{setMode('login');setError('');setMessage('')}}><KeyRound size={15}/> Entrar</button>
-            <button type="button" className={mode==='register'?'active':''} onClick={()=>{setMode('register');setError('');setMessage('')}}><UserPlus size={15}/> Criar conta</button>
-          </div>}
-
-          {previewMode&&<div className="auth2-preview">
-            <Wrench size={16}/>
-            <div><strong>Login em preparação</strong><span>O banco ainda será conectado. O acesso abaixo é temporário para testar o fluxo.</span></div>
-          </div>}
-
-          <form className="auth2-form" onSubmit={submit}>
-            {mode==='register'&&!forgot&&<label>
-              <span>Nome completo</span>
-              <div className="auth2-input">
-                <UserRound size={17}/>
-                <input
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={e=>setName(e.target.value)}
-                />
-              </div>
-            </label>}
-
-            <label>
-              <span>E-mail</span>
-              <div className="auth2-input">
-                <Mail size={17}/>
-                <input
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="seuemail@exemplo.com"
-                  value={email}
-                  onChange={e=>setEmail(e.target.value)}
-                  disabled={previewMode}
-                />
-              </div>
-            </label>
-
-            {!forgot&&<label>
-              <span>Senha</span>
-              <div className="auth2-input">
-                <LockKeyhole size={17}/>
-                <input
-                  type={showPassword?'text':'password'}
-                  autoComplete={mode==='register'?'new-password':'current-password'}
-                  placeholder={mode==='register'?'Crie uma senha com 8+ caracteres':'Digite sua senha'}
-                  value={password}
-                  onChange={e=>setPassword(e.target.value)}
-                  disabled={previewMode}
-                />
-                <button
-                  type="button"
-                  onClick={()=>setShowPassword(v=>!v)}
-                  aria-label={showPassword?'Ocultar senha':'Mostrar senha'}
-                  disabled={previewMode}
-                >
-                  {showPassword?<EyeOff size={17}/>:<Eye size={17}/>}
-                </button>
-              </div>
-            </label>}
-
-            {mode==='register'&&!forgot&&<label>
-              <span>Confirmar senha</span>
-              <div className="auth2-input">
-                <LockKeyhole size={17}/>
-                <input
-                  type={showPassword?'text':'password'}
-                  autoComplete="new-password"
-                  placeholder="Digite a senha novamente"
-                  value={confirmPassword}
-                  onChange={e=>setConfirmPassword(e.target.value)}
-                />
-              </div>
-            </label>}
-
-            {error&&<div className="auth2-message error">{error}</div>}
-            {message&&<div className="auth2-message success">{message}</div>}
-
-            <button className="auth2-submit" disabled={busy} type="submit">
-              {busy?<><span className="auth2-spinner"/>Aguarde...</>:previewMode?'Acessar painel temporariamente':forgot?'Enviar recuperação':mode==='register'?'Criar minha conta':'Entrar no sistema'}
-            </button>
-          </form>
-
-          {!previewMode&&mode==='login'&&<button className="auth2-forgot" type="button" onClick={()=>{setForgot(v=>!v);setError('');setMessage('')}}>
-            {forgot?'Voltar para o login':'Esqueci minha senha'}
-          </button>}
-
-          {!previewMode&&mode==='register'&&!forgot&&<p className="auth2-register-note">Ao criar a conta, o acesso inicial é do tipo <strong>visualizador</strong>.</p>}
-
-          <div className="auth2-note">
-            <ShieldCheck size={14}/>
-            <span>{previewMode?'O login real será ativado quando o banco for conectado.':'O acesso ao dashboard é restrito a usuários autorizados.'}</span>
+          <div className="auth2-mode-tabs">
+            <button type="button" className={mode==='login'?'active':''} onClick={()=>setMode('login')}><KeyRound size={15}/> Entrar</button>
+            <button type="button" className={mode==='register'?'active':''} onClick={()=>setMode('register')}><UserPlus size={15}/> Criar conta</button>
           </div>
+
+          <div className="clerk-auth-component">
+            {mode==='register'
+              ? <SignUp routing="hash" appearance={appearance} signInUrl="#" fallbackRedirectUrl="/"/>
+              : <SignIn routing="hash" appearance={appearance} signUpUrl="#" fallbackRedirectUrl="/"/>}
+          </div>
+
+          <div className="auth2-note"><ShieldCheck size={14}/><span>Autenticação gerenciada pelo Clerk. Os dados energéticos continuam armazenados no Supabase.</span></div>
         </div>
       </section>
     </section>
   </main>
+}
+
+function InfoPanel(){
+  return <aside className="auth2-info">
+    <div className="auth2-brand">
+      <img src="/upe-logo.png" alt="Universidade de Pernambuco"/>
+      <span/>
+      <div><strong>POLI Energia</strong><small>Escola Politécnica de Pernambuco</small></div>
+    </div>
+
+    <div className="auth2-info-content">
+      <div className="auth2-mark"><Zap size={34} fill="currentColor"/></div>
+      <div className="auth2-kicker">SISTEMA DE GESTÃO ENERGÉTICA</div>
+      <h1>Acesse o painel energético da POLI.</h1>
+      <p>Consulte consumo, demanda máxima, Ponta, Fora de Ponta, TE, TUSD e relatórios em um ambiente seguro, claro e organizado.</p>
+      <div className="auth2-points">
+        <div><ShieldCheck size={16}/><span><strong>Acesso autenticado</strong><small>Conta e sessão protegidas pelo Clerk.</small></span></div>
+        <div><LockKeyhole size={16}/><span><strong>Dados separados</strong><small>Supabase permanece responsável pelo banco energético.</small></span></div>
+      </div>
+    </div>
+
+    <div className="auth2-info-footer"><span>POLI Energia</span><span>Gestão e análise de consumo elétrico</span></div>
+  </aside>
 }

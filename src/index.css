@@ -485,3 +485,7 @@
 .auth2-register-note{margin-top:13px;color:#7d8a99;font-size:.55rem;line-height:1.5}
 .auth2-register-note strong{color:#123b73}
 
+
+
+/* CLERK EMBEDDED AUTH */
+.clerk-auth-component{margin-top:18px;width:100%}.clerk-auth-component .cl-rootBox,.clerk-auth-component .cl-cardBox,.clerk-auth-component .cl-card{width:100%;max-width:none}.clerk-auth-wrap .auth2-note{margin-top:18px}@media(max-width:620px){.clerk-auth-component{margin-top:14px}}
