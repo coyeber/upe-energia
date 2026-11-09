@@ -31,8 +31,8 @@ export function sum(values){ return values.map(n).filter(v=>v!==null).reduce((a,
 
 function tariffSlot(slot={}){
   const consumoKwh=firstNumber(slot.consumo_kwh)
-  const teKwh=firstNumber(slot.te_consumo_kwh,consumoKwh)
-  const tusdKwh=firstNumber(slot.tusd_consumo_kwh,consumoKwh)
+  const teKwh=firstNumber(slot.te_consumo_kwh)
+  const tusdKwh=firstNumber(slot.tusd_consumo_kwh)
   const teValor=firstNumber(slot.te_valor)
   const tusdValor=firstNumber(slot.tusd_valor)
   return {
@@ -49,9 +49,32 @@ function tariffSlot(slot={}){
   }
 }
 
+function repairLegacyUsageSystemBill(bill={}){
+  const labels=[
+    ...(bill.componentes_fatura||[]).map(x=>x?.nome),
+    ...(bill.campos_extras||[]).map(x=>x?.nome)
+  ].filter(Boolean).join(' ')
+  const hasUsage=/uso\s+sistema\s+(?:energ(?:ia)?|encar(?:gos)?)\.?/i.test(labels)
+  const hasExplicitTE=/(?:tarifa\s+(?:de\s+)?energia|\bTE\b\s*(?:ponta|fora\s+de\s+ponta|NP|FP|kWh|R\$))/i.test(labels)
+  if(!hasUsage||hasExplicitTE)return bill.tarifas_horarias||{}
+
+  const current=bill.tarifas_horarias||{}
+  const shift=(slot={})=>({
+    ...slot,
+    tusd_consumo_kwh:slot.tusd_consumo_kwh ?? slot.te_consumo_kwh ?? slot.consumo_kwh ?? null,
+    tusd_valor:slot.tusd_valor ?? slot.te_valor ?? null,
+    tusd_tarifa:slot.tusd_tarifa ?? slot.te_tarifa ?? null,
+    te_consumo_kwh:null,
+    te_valor:null,
+    te_tarifa:null
+  })
+  return {ponta:shift(current.ponta||{}),fora_ponta:shift(current.fora_ponta||{})}
+}
+
 export function billFinancials(bill={}){
-  const ponta=tariffSlot(bill.tarifas_horarias?.ponta||{})
-  const foraPonta=tariffSlot(bill.tarifas_horarias?.fora_ponta||{})
+  const repaired=repairLegacyUsageSystemBill(bill)
+  const ponta=tariffSlot(repaired.ponta||{})
+  const foraPonta=tariffSlot(repaired.fora_ponta||{})
   const demandaFaturadaKw=firstNumber(bill.demanda_kw,bill.demanda_faturada_kw)
   return {
     consumoFaturadoKwh:firstNumber(bill.consumo_faturado_kwh),

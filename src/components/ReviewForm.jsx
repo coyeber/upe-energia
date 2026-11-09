@@ -30,7 +30,7 @@ export default function ReviewForm({data,onSave,fileName,provider,model}){
   </div>
 
   <div className="grid lg:grid-cols-3 gap-4 mt-6"><MetaCard title="Confiabilidade da leitura" text={`${form.confianca?.geral||'não informada'} • ${(form.confianca?.observacoes||[]).join(' ')||'Sem observações.'}`}/><MetaCard title="Componentes da fatura" text={`${form.componentes_fatura?.length||0} item(ns) identificado(s) na análise.`}/><MetaCard title="Cobranças específicas" text={`${form.multas?.length||0} multa(s) • ${form.impostos?.length||0} imposto(s) • iluminação pública ${form.iluminacao_publica_valor!=null?'identificada':'não identificada'}.`}/></div>
-  <div className="review-warning"><CheckCircle2 size={17}/><div><strong>Revisão simplificada</strong><p>Ponta e Fora de Ponta usam apenas a Demanda máxima. Os campos duplicados de demanda foram removidos. TE e TUSD continuam separados por quantidade, valor e tarifa.</p></div></div>
+  <div className="review-warning"><CheckCircle2 size={17}/><div><strong>Revisão simplificada</strong><p>Ponta e Fora de Ponta usam apenas a Demanda máxima. Os campos duplicados de demanda foram removidos. TE e TUSD continuam separados por quantidade, valor e tarifa. Linhas “Uso Sistema Energ. NP/FP” pertencem à TUSD; TE só aparece quando estiver explicitamente discriminada na fatura.</p></div></div>
   </>}
   <div className="mt-6 flex justify-end"><button className="btn-primary btn-large" onClick={save}><Save size={18}/>Salvar análise no dashboard</button></div>
  </section>

@@ -27,6 +27,37 @@ const tariff = v => ({
   tusd_tarifa: asNumber(v?.tusd_tarifa)
 })
 
+function repairUsageSystemClassification(data={},sourceText=''){
+  const invoice=String(sourceText||'').replace(/\s+/g,' ')
+  const hasUsageSystem=/uso\s+sistema\s+(?:energ(?:ia)?|encar(?:gos)?)\.?/i.test(invoice)
+  const hasNP=/uso\s+sistema\s+(?:energ(?:ia)?|encar(?:gos)?)\.?\s*n\s*p\b/i.test(invoice)
+  const hasFP=/uso\s+sistema\s+(?:energ(?:ia)?|encar(?:gos)?)\.?\s*f\s*p\b/i.test(invoice)
+  const hasExplicitTE=/(?:tarifa\s+(?:de\s+)?energia|\bTE\b\s*(?:ponta|fora\s+de\s+ponta|NP|FP|kWh|R\$))/i.test(invoice)
+  if(!hasUsageSystem||hasExplicitTE)return data
+
+  const current=data?.tarifas_horarias||{}
+  const shift=(slot={},active)=>{
+    if(!active)return {...slot}
+    const next={...slot}
+    next.tusd_consumo_kwh=next.tusd_consumo_kwh ?? next.te_consumo_kwh ?? next.consumo_kwh ?? null
+    next.tusd_valor=next.tusd_valor ?? next.te_valor ?? null
+    next.tusd_tarifa=next.tusd_tarifa ?? next.te_tarifa ?? null
+    next.te_consumo_kwh=null
+    next.te_valor=null
+    next.te_tarifa=null
+    return next
+  }
+
+  return {
+    ...data,
+    tarifas_horarias:{
+      ...current,
+      ponta:shift(current.ponta||{},hasNP),
+      fora_ponta:shift(current.fora_ponta||{},hasFP)
+    }
+  }
+}
+
 function normalize(data = {}) {
   const multas=moneyItems(data.multas), impostos=moneyItems(data.impostos)
   const multasTotal=asNumber(data.multas_total) ?? (multas.length?multas.reduce((s,x)=>s+x.valor,0):null)
@@ -103,6 +134,10 @@ REGRAS OBRIGATÓRIAS:
 - NÃO extraia "demanda ativa" e NÃO crie "demanda faturada/paga" dentro de Ponta ou Fora de Ponta. Esses campos geravam duplicidade e confusão.
 - demanda_maxima_kw é o único campo de demanda de cada posto tarifário e nunca deve ser confundido com demanda_contratada_kw.
 - TE = Tarifa de Energia; TUSD = Tarifa de Uso do Sistema de Distribuição. Não agregue uma na outra e não crie um custo efetivo único somando TE + TUSD.
+- REGRA DE CLASSIFICAÇÃO DA FATURA: linhas descritas como "Uso Sistema Energ.NP", "Uso Sistema Energ. NP", "Uso Sistema Energ.FP", "Uso Sistema Energ. FP" ou equivalentes de "Uso Sistema" são TUSD / uso do sistema de distribuição, NUNCA TE. NP corresponde ao posto Ponta e FP corresponde ao posto Fora de Ponta.
+- Em faturas atualizadas pode não existir TE discriminada. Se não houver uma linha explicitamente identificada como TE ou Tarifa de Energia, deixe te_consumo_kwh, te_valor e te_tarifa como null. Nunca use uma linha "Uso Sistema" para preencher TE.
+- Para as linhas "Uso Sistema Energ.NP/FP" em kWh, extraia quantidade, valor faturado e preço unitário respectivamente em tusd_consumo_kwh, tusd_valor e tusd_tarifa do posto correto.
+- componentes_fatura deve preservar as descrições dos itens da fatura, especialmente linhas "Uso Sistema", para permitir auditoria da classificação.
 - te_consumo_kwh e tusd_consumo_kwh aceitam SOMENTE valores cuja unidade seja kWh. Nunca coloque um valor em kW nesses campos. Se a linha de TUSD representar demanda em kW, não use esse número como Quantidade TUSD (kWh); deixe tusd_consumo_kwh como null.
 - Se a fatura informar quantidades próprias de energia em kWh para TE e TUSD, extraia-as. Se não informar, deixe null; o dashboard poderá usar o consumo do posto apenas como fallback explícito.
 - NÃO calcule custo efetivo no backend. O dashboard calcula separadamente: TE efetiva = TE (R$) ÷ kWh da TE do posto; TUSD efetiva = TUSD (R$) ÷ kWh da TUSD do posto. Ponta e Fora de Ponta nunca são misturados nesse cálculo.
@@ -140,6 +175,7 @@ TEXTO DA FATURA:\n${texto}`
     if(!response.ok){const detail=payload?.error?.message||payload?.message||payload?.raw||`HTTP ${response.status}`;console.error('Erro do serviço de análise:',response.status,detail);return res.status(response.status).json({error:`Serviço de análise (HTTP ${response.status}): ${detail}`,code:payload?.error?.status||`HTTP_${response.status}`})}
     const finishReason=payload?.candidates?.[0]?.finishReason;if(finishReason&&finishReason!=='STOP')return res.status(502).json({error:`O serviço de análise encerrou a resposta antes de concluir (${finishReason}). Tente novamente.`})
     const content=extractText(payload);if(!content)return res.status(502).json({error:'O serviço de análise não retornou conteúdo analisável.'})
-    return res.status(200).json({ok:true,provider:'Serviço de análise',model,data:normalize(safeJson(content))})
+    const parsed=repairUsageSystemClassification(safeJson(content),texto)
+    return res.status(200).json({ok:true,provider:'Serviço de análise',model,data:normalize(parsed)})
   }catch(error){console.error('Erro no serviço de análise:',error);return res.status(500).json({error:`Erro interno no serviço de análise: ${error?.message||'erro desconhecido'}`})}
 }
