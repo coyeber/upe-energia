@@ -1,89 +1,100 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { useAuth as useClerkAuth, useClerk, useSession, useUser } from '@clerk/react'
-import { AUTH_ENABLED, CLERK_CONFIGURED, SUPABASE_CONFIGURED, createClerkSupabaseClient } from '../lib/supabase'
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  updateProfile
+} from 'firebase/auth'
+import { firebaseAuth, firebaseConfigured } from '../lib/firebase'
 
 const AuthContext=createContext(null)
 
 export function AuthProvider({children}){
-  if(!CLERK_CONFIGURED){
-    const value={
-      enabled:AUTH_ENABLED,
-      configured:false,
-      loading:false,
-      authError:null,
-      session:null,
-      user:null,
-      signOut:async()=>{}
-    }
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-  }
-
-  return <ClerkAuthBridge>{children}</ClerkAuthBridge>
-}
-
-function ClerkAuthBridge({children}){
-  const {isLoaded,isSignedIn,sessionId}=useClerkAuth()
-  const {user}=useUser()
-  const {session}=useSession()
-  const clerk=useClerk()
-  const [loadTimedOut,setLoadTimedOut]=useState(false)
+  const [loading,setLoading]=useState(true)
+  const [firebaseUser,setFirebaseUser]=useState(null)
+  const [authError,setAuthError]=useState(null)
 
   useEffect(()=>{
-    if(isLoaded){
-      setLoadTimedOut(false)
-      return
-    }
-    const timer=setTimeout(()=>{
-      console.error('Clerk não concluiu a inicialização em 8 segundos. Verifique Publishable Key, conexão e configuração da instância.')
-      setLoadTimedOut(true)
+    const timeout=setTimeout(()=>{
+      setLoading(false)
+      setAuthError('FIREBASE_LOAD_TIMEOUT')
     },8000)
-    return()=>clearTimeout(timer)
-  },[isLoaded])
 
-  useEffect(()=>{
-    if(!isLoaded || !isSignedIn || !session || !user || !SUPABASE_CONFIGURED) return
+    const unsubscribe=onAuthStateChanged(firebaseAuth,user=>{
+      clearTimeout(timeout)
+      setFirebaseUser(user)
+      setAuthError(null)
+      setLoading(false)
+    },error=>{
+      console.error('Erro ao inicializar Firebase Auth:',error)
+      clearTimeout(timeout)
+      setAuthError(error?.code||'FIREBASE_AUTH_ERROR')
+      setLoading(false)
+    })
 
-    const client=createClerkSupabaseClient(session)
-    if(!client) return
-
-    const email=user.primaryEmailAddress?.emailAddress || ''
-    const nome=user.fullName || user.firstName || email.split('@')[0] || 'Usuário'
-
-    client
-      .from('clerk_profiles')
-      .upsert({user_id:user.id,nome},{onConflict:'user_id'})
-      .then(({error})=>{
-        if(error) console.warn('Perfil Clerk ainda não sincronizado com Supabase:',error.message)
-      })
-  },[isLoaded,isSignedIn,session,user])
-
-  const appUser=useMemo(()=>{
-    if(!user) return null
-    return {
-      id:user.id,
-      email:user.primaryEmailAddress?.emailAddress || '',
-      name:user.fullName || user.firstName || '',
-      imageUrl:user.imageUrl
+    return()=>{
+      clearTimeout(timeout)
+      unsubscribe()
     }
-  },[user])
+  },[])
+
+  const user=useMemo(()=>{
+    if(!firebaseUser)return null
+    return {
+      id:firebaseUser.uid,
+      email:firebaseUser.email||'',
+      name:firebaseUser.displayName||'',
+      emailVerified:Boolean(firebaseUser.emailVerified),
+      imageUrl:firebaseUser.photoURL||''
+    }
+  },[firebaseUser])
 
   const value=useMemo(()=>({
-    enabled:AUTH_ENABLED,
-    configured:CLERK_CONFIGURED,
-    loading:!isLoaded&&!loadTimedOut,
-    authError:loadTimedOut?'CLERK_LOAD_TIMEOUT':null,
-    session:isSignedIn?{id:sessionId}:null,
-    user:appUser,
+    enabled:true,
+    configured:firebaseConfigured,
+    loading,
+    authError,
+    session:firebaseUser?{id:firebaseUser.uid}:null,
+    user,
+    async signIn(email,password){
+      try{
+        const result=await signInWithEmailAndPassword(firebaseAuth,email,password)
+        return {data:result,error:null}
+      }catch(error){
+        return {data:null,error}
+      }
+    },
+    async signUp(nome,email,password){
+      try{
+        const result=await createUserWithEmailAndPassword(firebaseAuth,email,password)
+        if(nome?.trim())await updateProfile(result.user,{displayName:nome.trim()})
+        await result.user.reload()
+        setFirebaseUser(firebaseAuth.currentUser)
+        return {data:result,error:null}
+      }catch(error){
+        return {data:null,error}
+      }
+    },
+    async resetPassword(email){
+      try{
+        await sendPasswordResetEmail(firebaseAuth,email)
+        return {error:null}
+      }catch(error){
+        return {error}
+      }
+    },
     async signOut(){
-      await clerk.signOut()
+      await firebaseSignOut(firebaseAuth)
     }
-  }),[isLoaded,isSignedIn,sessionId,appUser,clerk,loadTimedOut])
+  }),[loading,authError,firebaseUser,user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth(){
   const value=useContext(AuthContext)
-  if(!value) throw new Error('useAuth deve ser usado dentro de AuthProvider.')
+  if(!value)throw new Error('useAuth deve ser usado dentro de AuthProvider.')
   return value
 }

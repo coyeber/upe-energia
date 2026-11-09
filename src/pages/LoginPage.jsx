@@ -1,53 +1,96 @@
 import { useState } from 'react'
-import { SignIn, SignUp } from '@clerk/react'
-import { ArrowLeft, KeyRound, LockKeyhole, ShieldCheck, UserPlus, Zap } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, UserRound, Zap } from 'lucide-react'
+import { useAuth } from '../auth/AuthContext'
 
-const appearance={
-  variables:{
-    colorPrimary:'#123b73',
-    colorText:'#17395f',
-    colorTextSecondary:'#6f8094',
-    colorBackground:'#ffffff',
-    colorInputBackground:'#f9fbfd',
-    colorInputText:'#17395f',
-    borderRadius:'12px',
-    fontFamily:'Inter, ui-sans-serif, system-ui, sans-serif'
-  },
-  elements:{
-    rootBox:{width:'100%'},
-    cardBox:{width:'100%',boxShadow:'none'},
-    card:{width:'100%',boxShadow:'none',padding:'0',background:'transparent'},
-    header:{display:'none'},
-    socialButtonsBlockButton:{border:'1px solid #dbe4ed',boxShadow:'none'},
-    formFieldLabel:{color:'#41566f',fontWeight:'800',fontSize:'12px'},
-    formFieldInput:{height:'50px',border:'1px solid #d5dfeb',boxShadow:'none'},
-    formButtonPrimary:{height:'50px',background:'#ed1c2e',fontWeight:'900',boxShadow:'0 10px 22px rgba(237,28,46,.16)'},
-    footer:{marginTop:'16px'},
-    footerActionText:{color:'#7d8a99'},
-    footerActionLink:{color:'#123b73',fontWeight:'900'},
-    identityPreviewEditButton:{color:'#123b73'},
-    formResendCodeLink:{color:'#123b73',fontWeight:'800'}
-  }
+function authMessage(error){
+  const code=String(error?.code||'')
+  if(code.includes('invalid-credential'))return 'E-mail ou senha incorretos.'
+  if(code.includes('email-already-in-use'))return 'Este e-mail já possui uma conta.'
+  if(code.includes('weak-password'))return 'A senha é muito fraca. Use pelo menos 6 caracteres.'
+  if(code.includes('invalid-email'))return 'Informe um e-mail válido.'
+  if(code.includes('too-many-requests'))return 'Muitas tentativas. Aguarde um pouco e tente novamente.'
+  if(code.includes('network-request-failed'))return 'Não foi possível conectar ao serviço de autenticação.'
+  if(code.includes('operation-not-allowed'))return 'O login por e-mail e senha ainda não está ativado no Firebase.'
+  if(code.includes('unauthorized-domain'))return 'Este domínio ainda não está autorizado no Firebase Authentication.'
+  return 'Não foi possível concluir a operação agora. Tente novamente.'
 }
 
-export default function LoginPage({onBack,previewMode=false,onPreviewContinue}){
+export default function LoginPage({onBack}){
+  const {signIn,signUp,resetPassword}=useAuth()
   const [mode,setMode]=useState('login')
+  const [name,setName]=useState('')
+  const [email,setEmail]=useState('')
+  const [password,setPassword]=useState('')
+  const [confirmPassword,setConfirmPassword]=useState('')
+  const [showPassword,setShowPassword]=useState(false)
+  const [busy,setBusy]=useState(false)
+  const [error,setError]=useState('')
+  const [message,setMessage]=useState('')
 
-  if(previewMode){
-    return <main className="auth2-page">
-      <div className="auth2-bg-grid"/>
-      <div className="auth2-topbar">{onBack&&<button className="auth2-back" type="button" onClick={onBack}><ArrowLeft size={16}/> Voltar ao início</button>}</div>
-      <section className="auth2-card">
-        <InfoPanel/>
-        <section className="auth2-form-side"><div className="auth2-form-wrap">
-          <div className="auth2-form-icon"><KeyRound size={23}/></div>
-          <div className="auth2-overline">MODO DE TESTE</div>
-          <h2>Acessar o painel</h2>
-          <p className="auth2-copy">O login real ainda não está configurado neste ambiente.</p>
-          <button className="auth2-submit" type="button" onClick={onPreviewContinue}>Acessar painel temporariamente</button>
-        </div></section>
-      </section>
-    </main>
+  const forgot=mode==='forgot'
+  const register=mode==='register'
+
+  function switchMode(next){
+    setMode(next)
+    setError('')
+    setMessage('')
+    setPassword('')
+    setConfirmPassword('')
+  }
+
+  async function submit(e){
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    const cleanEmail=email.trim().toLowerCase()
+
+    if(!cleanEmail){
+      setError('Informe seu e-mail.')
+      return
+    }
+
+    if(forgot){
+      setBusy(true)
+      const {error}=await resetPassword(cleanEmail)
+      setBusy(false)
+      if(error){
+        setError(authMessage(error))
+        return
+      }
+      setMessage('E-mail de recuperação enviado. Confira sua caixa de entrada e também o spam.')
+      return
+    }
+
+    if(register){
+      if(!name.trim()){
+        setError('Informe seu nome.')
+        return
+      }
+      if(password.length<6){
+        setError('A senha precisa ter pelo menos 6 caracteres.')
+        return
+      }
+      if(password!==confirmPassword){
+        setError('As senhas não coincidem.')
+        return
+      }
+
+      setBusy(true)
+      const {error}=await signUp(name,cleanEmail,password)
+      setBusy(false)
+      if(error)setError(authMessage(error))
+      return
+    }
+
+    if(!password){
+      setError('Informe sua senha.')
+      return
+    }
+
+    setBusy(true)
+    const {error}=await signIn(cleanEmail,password)
+    setBusy(false)
+    if(error)setError(authMessage(error))
   }
 
   return <main className="auth2-page">
@@ -63,24 +106,68 @@ export default function LoginPage({onBack,previewMode=false,onPreviewContinue}){
       <InfoPanel/>
 
       <section className="auth2-form-side">
-        <div className="auth2-form-wrap clerk-auth-wrap">
-          <div className="auth2-form-icon">{mode==='register'?<UserPlus size={23}/>:<KeyRound size={23}/>}</div>
-          <div className="auth2-overline">{mode==='register'?'NOVO ACESSO':'ACESSO RESTRITO'}</div>
-          <h2>{mode==='register'?'Criar sua conta':'Entrar no painel'}</h2>
-          <p className="auth2-copy">{mode==='register'?'Crie seu perfil para acessar o POLI Energia. O Clerk cuidará da verificação e segurança do cadastro.':'Entre com seu e-mail e senha para acessar o POLI Energia.'}</p>
+        <div className="auth2-form-wrap">
+          <div className="auth2-form-icon">{register?<UserPlus size={23}/>:<KeyRound size={23}/>}</div>
+          <div className="auth2-overline">{register?'NOVO ACESSO':forgot?'RECUPERAÇÃO DE ACESSO':'ACESSO RESTRITO'}</div>
+          <h2>{register?'Criar sua conta':forgot?'Recuperar senha':'Entrar no painel'}</h2>
+          <p className="auth2-copy">{register?'Cadastre seu nome, e-mail e senha. A conta entra no sistema imediatamente, sem exigir confirmação por e-mail.':forgot?'Informe o e-mail cadastrado para receber um link de redefinição de senha.':'Use seu e-mail e senha para acessar o POLI Energia.'}</p>
 
-          <div className="auth2-mode-tabs">
-            <button type="button" className={mode==='login'?'active':''} onClick={()=>setMode('login')}><KeyRound size={15}/> Entrar</button>
-            <button type="button" className={mode==='register'?'active':''} onClick={()=>setMode('register')}><UserPlus size={15}/> Criar conta</button>
+          {!forgot&&<div className="auth2-mode-tabs">
+            <button type="button" className={mode==='login'?'active':''} onClick={()=>switchMode('login')}><KeyRound size={15}/> Entrar</button>
+            <button type="button" className={register?'active':''} onClick={()=>switchMode('register')}><UserPlus size={15}/> Criar conta</button>
+          </div>}
+
+          <form className="auth2-form" onSubmit={submit}>
+            {register&&<label>
+              <span>Nome completo</span>
+              <div className="auth2-input">
+                <UserRound size={17}/>
+                <input type="text" autoComplete="name" placeholder="Seu nome" value={name} onChange={e=>setName(e.target.value)}/>
+              </div>
+            </label>}
+
+            <label>
+              <span>E-mail</span>
+              <div className="auth2-input">
+                <Mail size={17}/>
+                <input type="email" inputMode="email" autoComplete="email" placeholder="seuemail@exemplo.com" value={email} onChange={e=>setEmail(e.target.value)}/>
+              </div>
+            </label>
+
+            {!forgot&&<label>
+              <span>Senha</span>
+              <div className="auth2-input">
+                <LockKeyhole size={17}/>
+                <input type={showPassword?'text':'password'} autoComplete={register?'new-password':'current-password'} placeholder={register?'Crie uma senha':'Digite sua senha'} value={password} onChange={e=>setPassword(e.target.value)}/>
+                <button type="button" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ocultar senha':'Mostrar senha'}>
+                  {showPassword?<EyeOff size={17}/>:<Eye size={17}/>}
+                </button>
+              </div>
+            </label>}
+
+            {register&&<label>
+              <span>Confirmar senha</span>
+              <div className="auth2-input">
+                <LockKeyhole size={17}/>
+                <input type={showPassword?'text':'password'} autoComplete="new-password" placeholder="Digite a senha novamente" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}/>
+              </div>
+            </label>}
+
+            {error&&<div className="auth2-message error">{error}</div>}
+            {message&&<div className="auth2-message success">{message}</div>}
+
+            <button className="auth2-submit" disabled={busy} type="submit">
+              {busy?<><span className="auth2-spinner"/>Aguarde...</>:forgot?'Enviar recuperação':register?'Criar minha conta':'Entrar no sistema'}
+            </button>
+          </form>
+
+          {mode==='login'&&<button className="auth2-forgot" type="button" onClick={()=>switchMode('forgot')}>Esqueci minha senha</button>}
+          {forgot&&<button className="auth2-forgot" type="button" onClick={()=>switchMode('login')}>Voltar para o login</button>}
+
+          <div className="auth2-note">
+            <ShieldCheck size={14}/>
+            <span>Autenticação gerenciada pelo Firebase. A recuperação de senha é enviada pelo próprio Firebase Authentication.</span>
           </div>
-
-          <div className="clerk-auth-component">
-            {mode==='register'
-              ? <SignUp routing="hash" appearance={appearance} signInUrl="#" fallbackRedirectUrl="/"/>
-              : <SignIn routing="hash" appearance={appearance} signUpUrl="#" fallbackRedirectUrl="/"/>}
-          </div>
-
-          <div className="auth2-note"><ShieldCheck size={14}/><span>Autenticação gerenciada pelo Clerk. Os dados energéticos continuam armazenados no Supabase.</span></div>
         </div>
       </section>
     </section>
@@ -101,8 +188,8 @@ function InfoPanel(){
       <h1>Acesse o painel energético da POLI.</h1>
       <p>Consulte consumo, demanda máxima, Ponta, Fora de Ponta, TE, TUSD e relatórios em um ambiente seguro, claro e organizado.</p>
       <div className="auth2-points">
-        <div><ShieldCheck size={16}/><span><strong>Acesso autenticado</strong><small>Conta e sessão protegidas pelo Clerk.</small></span></div>
-        <div><LockKeyhole size={16}/><span><strong>Dados separados</strong><small>Supabase permanece responsável pelo banco energético.</small></span></div>
+        <div><ShieldCheck size={16}/><span><strong>Acesso autenticado</strong><small>Cadastro e sessão protegidos pelo Firebase Authentication.</small></span></div>
+        <div><LockKeyhole size={16}/><span><strong>Recuperação por e-mail</strong><small>Redefinição de senha sem precisar administrar SMTP próprio.</small></span></div>
       </div>
     </div>
 

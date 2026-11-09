@@ -57,7 +57,7 @@ function AuthLoadErrorScreen({onBack}){
  return <div className="auth-session-loading">
   <div className="auth-session-logo"><Zap size={30} fill="currentColor"/></div>
   <strong>Não foi possível carregar o acesso</strong>
-  <span>O serviço de autenticação demorou mais do que o esperado. Isso pode acontecer por rede, bloqueio do navegador ou configuração do Clerk.</span>
+  <span>O serviço de autenticação demorou mais do que o esperado. Isso pode acontecer por rede, bloqueio do navegador ou configuração do Firebase.</span>
   <div className="flex flex-wrap justify-center gap-3 mt-6">
    <button className="btn-primary" type="button" onClick={()=>window.location.reload()}>Tentar novamente</button>
    <button className="btn-secondary" type="button" onClick={onBack}>Voltar ao início</button>
