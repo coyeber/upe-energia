@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useAuth as useClerkAuth, useClerk, useSession, useUser } from '@clerk/react'
 import { AUTH_ENABLED, CLERK_CONFIGURED, SUPABASE_CONFIGURED, createClerkSupabaseClient } from '../lib/supabase'
 
@@ -10,6 +10,7 @@ export function AuthProvider({children}){
       enabled:AUTH_ENABLED,
       configured:false,
       loading:false,
+      authError:null,
       session:null,
       user:null,
       signOut:async()=>{}
@@ -25,6 +26,19 @@ function ClerkAuthBridge({children}){
   const {user}=useUser()
   const {session}=useSession()
   const clerk=useClerk()
+  const [loadTimedOut,setLoadTimedOut]=useState(false)
+
+  useEffect(()=>{
+    if(isLoaded){
+      setLoadTimedOut(false)
+      return
+    }
+    const timer=setTimeout(()=>{
+      console.error('Clerk não concluiu a inicialização em 8 segundos. Verifique Publishable Key, conexão e configuração da instância.')
+      setLoadTimedOut(true)
+    },8000)
+    return()=>clearTimeout(timer)
+  },[isLoaded])
 
   useEffect(()=>{
     if(!isLoaded || !isSignedIn || !session || !user || !SUPABASE_CONFIGURED) return
@@ -56,13 +70,14 @@ function ClerkAuthBridge({children}){
   const value=useMemo(()=>({
     enabled:AUTH_ENABLED,
     configured:CLERK_CONFIGURED,
-    loading:!isLoaded,
+    loading:!isLoaded&&!loadTimedOut,
+    authError:loadTimedOut?'CLERK_LOAD_TIMEOUT':null,
     session:isSignedIn?{id:sessionId}:null,
     user:appUser,
     async signOut(){
       await clerk.signOut()
     }
-  }),[isLoaded,isSignedIn,sessionId,appUser,clerk])
+  }),[isLoaded,isSignedIn,sessionId,appUser,clerk,loadTimedOut])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -20,7 +20,7 @@ import { getBills,saveBill,deleteBill } from './data/storage'
 import { checkAnalysisService } from './services/analysisService'
 
 export default function App(){
- const {enabled:authEnabled,configured:authConfigured,loading:authLoading,session,user,signOut}=useAuth()
+ const {enabled:authEnabled,configured:authConfigured,loading:authLoading,authError,session,user,signOut}=useAuth()
  const [entryStage,setEntryStage]=useState('landing'),[previewAccess,setPreviewAccess]=useState(false)
  const [page,setPage]=useState('dashboard'),[bills,setBills]=useState(()=>getBills()),[status,setStatus]=useState('checking'),[health,setHealth]=useState(null),[boot,setBoot]=useState(true)
  useEffect(()=>{const min=new Promise(r=>setTimeout(r,2100));const healthReq=checkAnalysisService().then(h=>{setHealth(h);setStatus(h.apiKeyConfigured?'ready':'error')}).catch(()=>setStatus('error'));Promise.allSettled([min,healthReq]).then(()=>setBoot(false))},[])
@@ -29,6 +29,7 @@ export default function App(){
  if(entryStage==='landing')return <LandingPage onStart={()=>setEntryStage('access')}/>
  if(authEnabled&&!authConfigured)return <AuthSetupScreen/>
  if(authEnabled&&authLoading)return <AuthLoadingScreen/>
+ if(authEnabled&&authError)return <AuthLoadErrorScreen onBack={()=>setEntryStage('landing')}/>
  if(authEnabled&&!session)return <LoginPage onBack={()=>setEntryStage('landing')}/>
  if(!authEnabled&&!previewAccess)return <LoginPage previewMode onBack={()=>setEntryStage('landing')} onPreviewContinue={()=>setPreviewAccess(true)}/>
  if(boot)return <BootScreen/>
@@ -50,4 +51,16 @@ function BootScreen(){
 
 function AuthLoadingScreen(){
  return <div className="auth-session-loading"><div className="auth-session-logo"><Zap size={30} fill="currentColor"/></div><strong>Verificando acesso</strong><span>Carregando sua sessão com segurança...</span><i/></div>
+}
+
+function AuthLoadErrorScreen({onBack}){
+ return <div className="auth-session-loading">
+  <div className="auth-session-logo"><Zap size={30} fill="currentColor"/></div>
+  <strong>Não foi possível carregar o acesso</strong>
+  <span>O serviço de autenticação demorou mais do que o esperado. Isso pode acontecer por rede, bloqueio do navegador ou configuração do Clerk.</span>
+  <div className="flex flex-wrap justify-center gap-3 mt-6">
+   <button className="btn-primary" type="button" onClick={()=>window.location.reload()}>Tentar novamente</button>
+   <button className="btn-secondary" type="button" onClick={onBack}>Voltar ao início</button>
+  </div>
+ </div>
 }
