@@ -16,8 +16,8 @@ const resources=[
   },
   {
     icon:ReceiptText,
-    title:'TE e TUSD individualizados',
-    text:'Visualize energia e distribuição separadamente, com quantidades, valores e tarifas de cada componente.'
+    title:'Tarifas NP e FP individualizadas',
+    text:'Veja Uso Sistema Fio e os itens Uso Sistema Encar. NP/FP, com quantidades, preços das tarifas e valores faturados.'
   },
   {
     icon:BarChart3,
@@ -66,7 +66,7 @@ export default function LandingPage({onStart}){
           </h1>
 
           <p>
-            Visualize consumo, demanda, custos tarifários, TE, TUSD e indicadores da POLI
+            Visualize consumo, demanda contratada, tarifas NP/FP, impostos e indicadores da POLI
             em um ambiente claro, moderno e preparado para apoiar decisões.
           </p>
 
@@ -136,8 +136,8 @@ export default function LandingPage({onStart}){
             </div>
 
             <div className="landing-pro-preview-footer">
-              <div><span>TE</span><strong>Energia</strong></div>
-              <div><span>TUSD</span><strong>Distribuição</strong></div>
+              <div><span>FIO</span><strong>Demanda</strong></div>
+              <div><span>NP / FP</span><strong>Tarifas</strong></div>
               <div><span>P / FP</span><strong>Separados</strong></div>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function LandingPage({onStart}){
           <span className="landing-pro-step-line"/>
           <article>
             <b>02</b>
-            <div><strong>Organize os dados</strong><p>O sistema estrutura consumo, demanda, TE, TUSD e cobranças.</p></div>
+            <div><strong>Organize os dados</strong><p>O sistema estrutura consumo, Uso Sistema Fio, tarifas NP/FP e cobranças.</p></div>
           </article>
           <span className="landing-pro-step-line"/>
           <article>

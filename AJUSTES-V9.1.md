@@ -1,36 +1,17 @@
-# Ajustes V9.1 — Tarifas separadas
+# Convenções vigentes — faturas A4 Horo-Sazonal Verde
 
-## Regra central
+## Demanda
+- Uso Sistema Fio (kW) alimenta Demanda contratada; é distinto das demandas máximas medidas.
+- Demanda máxima Ponta (NP) e Demanda máxima Fora de Ponta (FP) são grandezas independentes.
+- A demanda máxima de um período é o maior valor medido entre os postos, nunca o contratado.
 
-O dashboard não calcula mais um custo efetivo global da fatura para análise tarifária.
+## Itens por posto
+- Uso Sistema Encar. NP (kWh) e Uso Sist. Encar. FP (kWh) são quantidades do uso do sistema.
+- Tarifa NP e Tarifa FP são valores unitários R$/kWh discriminados na fatura.
+- Valor da fatura NP e Valor da fatura FP são valores monetários R$ de cada posto.
+- Se um valor não estiver discriminado, apresente "—" e permita revisão.
 
-Ponta e Fora de Ponta são tratadas como postos independentes. Dentro de cada posto, TE e TUSD também são componentes independentes.
-
-### Custos efetivos
-
-- TE Ponta = valor TE Ponta / quantidade TE Ponta (kWh)
-- TUSD Ponta = valor TUSD Ponta / quantidade TUSD Ponta (kWh)
-- TE Fora de Ponta = valor TE Fora de Ponta / quantidade TE Fora de Ponta (kWh)
-- TUSD Fora de Ponta = valor TUSD Fora de Ponta / quantidade TUSD Fora de Ponta (kWh)
-
-Quando a fatura não informa uma quantidade própria de TE/TUSD, o sistema usa o consumo do próprio posto como denominador. Ponta nunca é usada como denominador de Fora de Ponta e vice-versa.
-
-## Novos gráficos separados
-
-- kWh/m² total
-- kWh per capita total
-- kWh (consumo) pago
-- Quantidade de kW (demanda) paga
-- Quantidade de multas e impostos
-- Valores de multas e impostos
-- Iluminação pública
-- Consumo Ponta x Fora de Ponta
-- TE Ponta x TE Fora de Ponta
-- TUSD Ponta x TUSD Fora de Ponta
-- Custos efetivos TE/TUSD por posto
-
-## Padronização
-
-- “Consumo diário normalizado” em todas as telas.
-- “Score de prioridade” em todas as telas.
-- A síntese executiva é calculada a partir do desvio real da média histórica e não utiliza texto contraditório do diagnóstico automático.
+## Dashboard
+- Gráfico de comparação dos preços NP/FP em barras, com rótulos visíveis.
+- Impostos (R$), multas (R$) e iluminação pública aparecem como cobranças distintas.
+- Consumo diário normalizado e Score de prioridade mantêm as mesmas regras.

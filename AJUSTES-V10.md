@@ -1,12 +1,12 @@
-# Ajustes V10 solicitados pela gestão
+# Ajustes V10 — gestão energética POLI
 
-- Quantitativo populacional identificado como **2.392 pessoas — referência 2025**.
-- Dashboard com cartões grandes e clicáveis para **Consumo, Demanda, TE e TUSD**.
-- Página exclusiva de **Consumo**, com Ponta e Fora de Ponta separados e médias anuais tracejadas.
-- Página exclusiva de **Demanda**, com um gráfico principal, limite contratado tracejado, média anual tracejada e quadro de meses que ultrapassaram o contratado.
-- Extração e armazenamento de **valor de ultrapassagem de demanda** quando presente na fatura.
-- Páginas exclusivas de **TE** e **TUSD**, cada uma com gráficos de quantidade/consumo e custo P/FP, com médias anuais tracejadas.
-- O gráfico principal de consumo no dashboard é clicável e abre a página detalhada.
-- Revisão após upload simplificada: os dados são preenchidos automaticamente; os campos detalhados ficam em uma revisão opcional.
-- Backend ampliado para capturar histórico de demanda e campos adicionais da conta sem exigir entrada manual.
-- TE, TUSD, Ponta e Fora de Ponta continuam sem mistura nos cálculos de custo efetivo.
+- População de referência: 2.392 pessoas (2025).
+- Cartões de Consumo, Demanda contratada, Demandas máximas NP/FP e Tarifas NP/FP.
+- Gráfico principal de consumo em linha, com detalhes clicáveis.
+- Área de Consumo separada em Ponta/NP e Fora de Ponta/FP.
+- Página de Demanda: limite contratado da linha Uso Sistema Fio (kW) e máximas realmente medidas por posto, separadas.
+- Tarifas NP/FP: quantidade de Uso Sistema Encar. NP/FP (kWh), Tarifa NP/FP (R$/kWh) e Valor da fatura NP/FP (R$).
+- Faturas podem trazer histórico mensal; mantenha dados de kW e kWh sem misturar.
+- Revisão após PDF é opcional e permite conferir campos extraídos antes de salvar.
+- Impostos, multas e iluminação pública permanecem detalhados em reais.
+- Campos vazios não são convertidos automaticamente em zero.

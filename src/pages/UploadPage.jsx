@@ -25,7 +25,7 @@ export default function UploadPage({onSaved}){
       text=await ocrPdf(file,p=>setProgress(45+Math.min(25,p*.25)))
     }
     if(text.replace(/\s/g,'').length<100) throw new Error('Não foi possível extrair texto suficiente desta conta.')
-    setState('ai');setProgress(72);setMsg('O sistema está identificando consumo, demanda, Ponta, Fora de Ponta, TE, TUSD, cobranças e histórico...')
+    setState('ai');setProgress(72);setMsg('O sistema está identificando consumo, demanda, Uso Sistema Fio, tarifas NP/FP, impostos, iluminação e histórico...')
     ticker=setInterval(()=>setProgress(p=>Math.min(92,p+1.1)),450)
     const response=await analyzeWithAnalysisService(text)
     clearInterval(ticker)

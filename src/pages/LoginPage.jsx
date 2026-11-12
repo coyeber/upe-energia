@@ -186,7 +186,7 @@ function InfoPanel(){
       <div className="auth2-mark"><Zap size={34} fill="currentColor"/></div>
       <div className="auth2-kicker">SISTEMA DE GESTÃO ENERGÉTICA</div>
       <h1>Acesse o painel energético da POLI.</h1>
-      <p>Consulte consumo, demanda máxima, Ponta, Fora de Ponta, TE, TUSD e relatórios em um ambiente seguro, claro e organizado.</p>
+      <p>Consulte consumo, demanda contratada, máximas NP/FP, tarifas e relatórios em um ambiente seguro, claro e organizado.</p>
       <div className="auth2-points">
         <div><ShieldCheck size={16}/><span><strong>Acesso autenticado</strong><small>Cadastro e sessão protegidos pelo Firebase Authentication.</small></span></div>
         <div><LockKeyhole size={16}/><span><strong>Recuperação por e-mail</strong><small>Redefinição de senha sem precisar administrar SMTP próprio.</small></span></div>

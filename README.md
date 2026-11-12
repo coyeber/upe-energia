@@ -12,12 +12,11 @@ Dashboard de acompanhamento energético da Escola Politécnica de Pernambuco (PO
 - **Visão geral**: resumo executivo e atalhos clicáveis.
 - **Consumo**: histórico mensal, Ponta (17h30–20h30), Fora de Ponta, média anual tracejada, kWh/m² e kWh per capita.
 - **Demanda**: um gráfico dedicado apenas à Demanda máxima Ponta e Demanda máxima Fora de Ponta, com demanda contratada tracejada, médias anuais e quadro de ultrapassagens.
-- **TE**: quantidade e custo de Tarifa de Energia, separados em Ponta e Fora de Ponta, com médias anuais tracejadas.
-- **TUSD**: quantidade e custo de Tarifa de Uso do Sistema de Distribuição, separados em Ponta e Fora de Ponta, com médias anuais tracejadas.
+- **Uso do sistema (NP/FP)**: quantidades, tarifa NP/FP e valores de fatura por posto tarifário.
 - **Enviar conta**: extração automática do PDF; a revisão detalhada é opcional.
 
 ## Regras tarifárias
-Ponta e Fora de Ponta nunca são misturadas. TE e TUSD também permanecem independentes. O custo efetivo de cada componente é calculado apenas com o valor e o kWh correspondentes ao mesmo componente e ao mesmo posto tarifário.
+Ponta (NP) e Fora de Ponta (FP) não são misturadas. "Uso Sistema Fio" alimenta a demanda contratada (kW); as demandas máximas medidas dos postos continuam independentes. Os preços das tarifas vêm dos valores explícitos da fatura, não de um custo combinado.
 
 ## Variáveis de ambiente
 No Vercel:
