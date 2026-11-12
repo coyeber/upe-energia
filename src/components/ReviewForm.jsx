@@ -20,9 +20,20 @@ const tariffFields=(post)=>[
 export default function ReviewForm({data,onSave,fileName,provider,model}){
  const [form,setForm]=useState({...data,demanda_contratada_kw:Number(data.demanda_contratada_kw)>0?data.demanda_contratada_kw:(Number(data.demanda_kw)>0?data.demanda_kw:null),tarifas_horarias:{ponta:{...(data.tarifas_horarias?.ponta||{})},fora_ponta:{...(data.tarifas_horarias?.fora_ponta||{})}}})
  const [showDetails,setShowDetails]=useState(false)
+ const [saving,setSaving]=useState(false)
+ const [saveError,setSaveError]=useState('')
  const set=(k,v)=>setForm(s=>({...s,[k]:numberFields.has(k)?(v===''?null:Number(v)):v}))
  const setTariff=(slot,k,v)=>setForm(s=>({...s,tarifas_horarias:{...s.tarifas_horarias,[slot]:{...(s.tarifas_horarias?.[slot]||{}),[k]:v===''?null:Number(v)}}}))
- function save(){const {demanda_kw,...clean}=form;onSave({...clean,id:makeId(),uploaded_at:new Date().toISOString(),source_file:fileName,status_extracao:'sucesso',provider,model})}
+ async function save(){
+  if(saving)return
+  setSaving(true);setSaveError('')
+  try{
+   const {demanda_kw,...clean}=form
+   await onSave({...clean,id:makeId(),uploaded_at:new Date().toISOString(),source_file:fileName,status_extracao:'sucesso',provider,model})
+  }catch(error){
+   setSaveError(error?.message||'Falha ao salvar a conta no Supabase.')
+  }finally{setSaving(false)}
+ }
  return <section className="card review-card animate-enter">
   <div className="review-head"><div><div className="label text-[#123b73]">Análise concluída</div><h2 className="section-title">Dados identificados automaticamente</h2><p className="section-subtitle">Você pode salvar imediatamente. A revisão detalhada é opcional e serve apenas para conferir o que foi lido na fatura.</p></div><span className="review-badge"><ShieldCheck size={15}/>Análise + validação</span></div>
   <div className="review-summary"><Summary icon={Zap} label="Consumo" value={form.consumo_kwh!=null?`${form.consumo_kwh} kWh`:'Não identificado'}/><Summary icon={Gauge} label="Demanda máxima Ponta" value={form.tarifas_horarias?.ponta?.demanda_maxima_kw!=null?`${form.tarifas_horarias.ponta.demanda_maxima_kw} kW`:'Não informada'}/><Summary icon={Gauge} label="Demanda máxima FP" value={form.tarifas_horarias?.fora_ponta?.demanda_maxima_kw!=null?`${form.tarifas_horarias.fora_ponta.demanda_maxima_kw} kW`:'Não informada'}/><Summary icon={CalendarDays} label="Ciclo" value={form.dias_faturados!=null?`${form.dias_faturados} dias`:'A confirmar'}/></div>
@@ -38,7 +49,8 @@ export default function ReviewForm({data,onSave,fileName,provider,model}){
   <div className="grid lg:grid-cols-3 gap-4 mt-6"><MetaCard title="Confiabilidade da leitura" text={`${form.confianca?.geral||'não informada'} • ${(form.confianca?.observacoes||[]).join(' ')||'Sem observações.'}`}/><MetaCard title="Componentes da fatura" text={`${form.componentes_fatura?.length||0} item(ns) identificado(s) na análise.`}/><MetaCard title="Cobranças específicas" text={`${form.multas?.length||0} multa(s) • ${form.impostos?.length||0} imposto(s) • iluminação pública ${form.iluminacao_publica_valor!=null?'identificada':'não identificada'}.`}/></div>
   <div className="review-warning"><CheckCircle2 size={17}/><div><strong>Revisão simplificada</strong><p>Uso Sistema Fio corresponde à demanda contratada. NP e FP são separados: quantidade do uso do sistema (kWh), preço da tarifa (R$/kWh) e valor da fatura (R$). Demandas máximas medidas permanecem independentes em cada posto.</p></div></div>
   </>}
-  <div className="mt-6 flex justify-end"><button className="btn-primary btn-large" onClick={save}><Save size={18}/>Salvar análise no dashboard</button></div>
+  {saveError&&<div role="alert" className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold p-4">{saveError}</div>}
+  <div className="mt-6 flex justify-end"><button type="button" className="btn-primary btn-large" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando no Supabase...':'Salvar análise no Supabase'}</button></div>
  </section>
 }
 function TariffEditor({post,title,subtitle,icon:Icon,data={},onChange}){return <div className="tariff-review-card"><div className="tariff-review-head"><div className="tariff-review-icon"><Icon size={18}/></div><div><strong>{title}</strong><span>{subtitle}</span></div></div><div className="grid sm:grid-cols-2 gap-3 mt-4">{tariffFields(post).map(([k,l])=><label className="field-label" key={k}>{l}<input className="field mt-1.5" type="number" step="any" value={data?.[k]??''} onChange={e=>onChange(k,e.target.value)}/></label>)}</div></div>}
