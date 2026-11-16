@@ -129,7 +129,7 @@ export default function EmailActionPage(){
           <p className="text-sm text-white/72 leading-relaxed mt-4">A confirmação protege sua conta e ajuda a garantir que o endereço informado pertence realmente a você.</p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-white/65"><ShieldCheck size={15}/> Firebase Authentication • ambiente protegido</div>
+        <div className="flex items-center gap-2 text-xs text-white/65"><ShieldCheck size={15}/> Autenticação do Firebase</div>
       </aside>
 
       <section className="p-7 md:p-10 flex items-center">

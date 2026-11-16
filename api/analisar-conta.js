@@ -1,3 +1,4 @@
+import { resolveContract } from '../src/utils/demand.js'
 const DEFAULT_MODEL = 'gemini-3.5-flash-lite'
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 
@@ -29,12 +30,13 @@ const positiveNumber=v=>{
   return value!==null&&value>0?value:null
 }
 
-// A quantidade em kW da linha Uso Sistema Fio corresponde ao limite contratado.
+// Uso Sistema Fio é uma quantidade faturada, não necessariamente contratada.
 function reconcileInvoiceReading(data={}){
   const components=arr(data.componentes_fatura)
   const fio=components.find(item=>/uso\s*(?:sistema|sist\.?)\s*fio\b/i.test(String(item?.nome||'')))
   const fioKw=fio&&/\bkw\b/i.test(String(fio.unidade||'kW'))?positiveNumber(fio.quantidade):null
-  const contracted=fioKw??positiveNumber(data.demanda_contratada_kw)??positiveNumber(data.demanda_kw)
+  const explicit=positiveNumber(data.demanda_contratada_explicita_kw)
+  const contract=resolveContract({...data,demanda_contratada_kw:explicit,demanda_contratada_fonte:explicit?'fatura':null,demanda_faturada_kw:fioKw})
   const current=data.tarifas_horarias||{}
   const byPost=(slot,post)=>{
     const next={...slot}
@@ -47,7 +49,7 @@ function reconcileInvoiceReading(data={}){
     }
     return next
   }
-  return {...data,demanda_contratada_kw:contracted,tarifas_horarias:{
+  return {...data,demanda_contratada_kw:contract.value,demanda_contratada_fonte:contract.source,demanda_faturada_kw:contract.billed,tarifas_horarias:{
     ...current,ponta:byPost(current.ponta||{},'ponta'),fora_ponta:byPost(current.fora_ponta||{},'fora_ponta')
   }}
 }
@@ -61,14 +63,14 @@ function normalize(data = {}) {
     data_emissao: text(data.data_emissao), data_vencimento: text(data.data_vencimento), periodo_leitura_inicio: text(data.periodo_leitura_inicio),
     periodo_leitura_fim: text(data.periodo_leitura_fim), proxima_leitura: text(data.proxima_leitura), dias_faturados: asNumber(data.dias_faturados),
     leitura_anterior: asNumber(data.leitura_anterior), leitura_atual: asNumber(data.leitura_atual), consumo_kwh: asNumber(data.consumo_kwh),
-    consumo_faturado_kwh: asNumber(data.consumo_faturado_kwh), demanda_contratada_kw: positiveNumber(data.demanda_contratada_kw) ?? positiveNumber(data.demanda_kw),
+    consumo_faturado_kwh: asNumber(data.consumo_faturado_kwh), demanda_contratada_kw: positiveNumber(data.demanda_contratada_kw), demanda_contratada_fonte:text(data.demanda_contratada_fonte), demanda_faturada_kw:positiveNumber(data.demanda_faturada_kw),
     demanda_ultrapassagem_kw: asNumber(data.demanda_ultrapassagem_kw), demanda_ultrapassagem_valor: asNumber(data.demanda_ultrapassagem_valor),
     valor_total: asNumber(data.valor_total), classe_consumidora: text(data.classe_consumidora), tipo_fornecimento: text(data.tipo_fornecimento),
     bandeira_tarifaria: text(data.bandeira_tarifaria), iluminacao_publica_valor: asNumber(data.iluminacao_publica_valor),
     multas, multas_total: multasTotal, impostos, impostos_total: impostosTotal,
     tarifas_horarias: { ponta: tariff(data.tarifas_horarias?.ponta), fora_ponta: tariff(data.tarifas_horarias?.fora_ponta) },
     historico_consumo: arr(data.historico_consumo).map(x=>({mes:text(x?.mes),kwh:asNumber(x?.kwh),dias:asNumber(x?.dias)})).filter(x=>x.mes&&x.kwh!==null),
-    historico_demanda: arr(data.historico_demanda).map(x=>({mes:text(x?.mes),demanda_faturada_kw:asNumber(x?.demanda_faturada_kw),demanda_contratada_kw:asNumber(x?.demanda_contratada_kw),demanda_maxima_ponta_kw:asNumber(x?.demanda_maxima_ponta_kw),demanda_maxima_fora_ponta_kw:asNumber(x?.demanda_maxima_fora_ponta_kw),ultrapassagem_kw:asNumber(x?.ultrapassagem_kw),ultrapassagem_valor:asNumber(x?.ultrapassagem_valor)})).filter(x=>x.mes),
+    historico_demanda: arr(data.historico_demanda).map(x=>({mes:text(x?.mes),demanda_faturada_kw:asNumber(x?.demanda_faturada_kw),demanda_contratada_kw:asNumber(x?.demanda_contratada_kw),demanda_contratada_fonte:x?.demanda_contratada_kw!=null?'fatura':null,demanda_maxima_ponta_kw:asNumber(x?.demanda_maxima_ponta_kw),demanda_maxima_fora_ponta_kw:asNumber(x?.demanda_maxima_fora_ponta_kw),ultrapassagem_kw:asNumber(x?.ultrapassagem_kw),ultrapassagem_valor:asNumber(x?.ultrapassagem_valor)})).filter(x=>x.mes),
     campos_extras: arr(data.campos_extras).map(x=>({nome:text(x?.nome)||'Campo',valor:text(x?.valor),unidade:text(x?.unidade)})),
     componentes_fatura: arr(data.componentes_fatura).map(x=>({nome:text(x?.nome)||'Componente',valor:asNumber(x?.valor),unidade:text(x?.unidade),quantidade:asNumber(x?.quantidade)})),
     diagnostico: {
@@ -119,7 +121,7 @@ REGRAS OBRIGATÓRIAS:
 - Valores monetários em número decimal; datas YYYY-MM-DD; referência YYYY-MM.
 - A unidade é A4 Horo-Sazonal Verde — Poder Público.
 - PONTA (NP/P) = 17h30 às 20h30; FORA DE PONTA (FP) = demais horários. Não misture os postos.
-- USO SISTEMA FIO: corresponde à DEMANDA CONTRATADA, em kW. Extraia a quantidade da linha "Uso Sistema Fio", e NÃO o valor R$ da linha. Coloque APENAS em demanda_contratada_kw. Se aparecer "Demanda geral" representando a mesma quantidade, use-a como fallback contratada. NÃO atribua essa quantidade a demanda máxima medida.
+- DEMANDA CONTRATADA: extraia somente quando o documento informar explicitamente o limite contratado, em demanda_contratada_explicita_kw. Se não houver, retorne null. A linha "Uso Sistema Fio" informa quantidade faturada (kW), que pode ser maior que a contratada. Não copie demanda geral, faturada ou medida para o campo contratado. Preserve a linha Uso Sistema Fio em componentes_fatura. O sistema verificará se o valor faturado supera as duas máximas medidas para inferir o contrato; não faça essa inferência no JSON.
 - Demanda máxima do posto: apenas a medida real de cada posto (em kW), em tarifas_horarias.ponta.demanda_maxima_kw e tarifas_horarias.fora_ponta.demanda_maxima_kw. Se não estiver discriminada, use null.
 - USO SISTEMA ENCAR. NP, USO SIST. ENCAR. NP, USO SISTEMA ENERG. NP: são os itens de distribuição em PONTA. A QUANTIDADE em kWh da linha -> tusd_consumo_kwh; a tarifa/preço unitário "Tarifa NP" (R$/kWh) -> tusd_tarifa; o valor monetário "Valor da fatura NP" -> tusd_valor.
 - USO SISTEMA ENCAR. FP, USO SIST. ENCAR. FP, USO SISTEMA ENERG. FP: são os itens de distribuição em FORA DE PONTA. A QUANTIDADE em kWh -> tusd_consumo_kwh; "Tarifa FP" -> tusd_tarifa; "Valor da fatura FP" -> tusd_valor.
@@ -128,14 +130,14 @@ REGRAS OBRIGATÓRIAS:
 - Não extraia ou crie campos de outros componentes tarifários que não estejam neste esquema. As contas analisadas informam TUSD, demanda, impostos e iluminação pública.
 - Extraia separadamente impostos (R$), multas (R$) e iluminação pública (R$); não trate ausência de valor como zero.
 - Preserve o nome/quantidade/unidade/valor das linhas originais em componentes_fatura para auditoria.
-- Extraia TODO o histórico de consumo mensal e, se existir, os valores de demanda contratada e demanda máxima por posto no histórico.
-- Os diagnósticos devem ser factuais; não afirmar comparação com média histórica, nem ultrapassagem sem evidência explícita.
+- Extraia TODO o histórico de consumo mensal e, se existir, os valores de demanda contratada explicitamente identificados e demanda máxima medida por posto no histórico. Não preencha demanda contratada histórica com demanda faturada ou máxima.
+- Os diagnósticos devem ser factuais, em português brasileiro técnico. Não afirmar comparação histórica sem base nem inferir cobrança de ultrapassagem. Para consumo Grupo A, o painel compara a demanda medida com o limite contratado acrescido de 5% (REN ANEEL 1.000, art. 301, II).
 
 JSON ESPERADO:
 {
  "concessionaria":string|null,"unidade_consumidora":string|null,"mes_referencia":string|null,"data_emissao":string|null,"data_vencimento":string|null,
  "periodo_leitura_inicio":string|null,"periodo_leitura_fim":string|null,"proxima_leitura":string|null,"dias_faturados":number|null,"leitura_anterior":number|null,"leitura_atual":number|null,
- "consumo_kwh":number|null,"consumo_faturado_kwh":number|null,"demanda_contratada_kw":number|null,"demanda_ultrapassagem_kw":number|null,"demanda_ultrapassagem_valor":number|null,"valor_total":number|null,
+ "consumo_kwh":number|null,"consumo_faturado_kwh":number|null,"demanda_contratada_explicita_kw":number|null,"demanda_ultrapassagem_kw":number|null,"demanda_ultrapassagem_valor":number|null,"valor_total":number|null,
  "classe_consumidora":string|null,"tipo_fornecimento":string|null,"bandeira_tarifaria":string|null,"iluminacao_publica_valor":number|null,
  "multas":[{"descricao":string,"valor":number}],"multas_total":number|null,"impostos":[{"descricao":string,"valor":number}],"impostos_total":number|null,
  "tarifas_horarias":{

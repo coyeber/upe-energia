@@ -9,7 +9,7 @@ export function DetailHeader({icon:Icon,kicker,title,subtitle,onBack}){
         <h1>{title}</h1>
         <p>{subtitle}</p>
       </div>
-      {onBack&&<button className="btn-secondary" onClick={onBack}><ArrowLeft size={16}/>Voltar ao dashboard</button>}
+      {onBack&&<button className="btn-secondary" onClick={onBack}><ArrowLeft size={16}/>Voltar à visão geral</button>}
     </div>
   </section>
 }

@@ -10,8 +10,8 @@ function authMessage(error){
   if(code.includes('invalid-email'))return 'Informe um e-mail válido.'
   if(code.includes('too-many-requests'))return 'Muitas tentativas. Aguarde um pouco e tente novamente.'
   if(code.includes('network-request-failed'))return 'Não foi possível conectar ao serviço de autenticação.'
-  if(code.includes('operation-not-allowed'))return 'O login por e-mail e senha ainda não está ativado no Firebase.'
-  if(code.includes('unauthorized-domain'))return 'Este domínio ainda não está autorizado no Firebase Authentication.'
+  if(code.includes('operation-not-allowed'))return 'O acesso por e-mail e senha ainda não está ativado no Firebase.'
+  if(code.includes('unauthorized-domain'))return 'Este domínio ainda não está autorizado no autenticação do Firebase.'
   return 'Não foi possível concluir a operação agora. Tente novamente.'
 }
 
@@ -157,12 +157,12 @@ export default function LoginPage({onBack}){
             {message&&<div className="auth2-message success">{message}</div>}
 
             <button className="auth2-submit" disabled={busy} type="submit">
-              {busy?<><span className="auth2-spinner"/>Aguarde...</>:forgot?'Enviar recuperação':register?'Criar minha conta':'Entrar no sistema'}
+              {busy?<><span className="auth2-spinner"/>Aguarde...</>:forgot?'Enviar recuperação':register?'Criar minha conta':'Acessar o painel'}
             </button>
           </form>
 
           {mode==='login'&&<button className="auth2-forgot" type="button" onClick={()=>switchMode('forgot')}>Esqueci minha senha</button>}
-          {forgot&&<button className="auth2-forgot" type="button" onClick={()=>switchMode('login')}>Voltar para o login</button>}
+          {forgot&&<button className="auth2-forgot" type="button" onClick={()=>switchMode('login')}>Voltar à tela de acesso</button>}
 
           <div className="auth2-note">
             <ShieldCheck size={14}/>
@@ -188,7 +188,7 @@ function InfoPanel(){
       <h1>Acesse o painel energético da POLI.</h1>
       <p>Consulte consumo, demanda contratada, máximas NP/FP, tarifas e relatórios em um ambiente seguro, claro e organizado.</p>
       <div className="auth2-points">
-        <div><ShieldCheck size={16}/><span><strong>Acesso autenticado</strong><small>Cadastro e sessão protegidos pelo Firebase Authentication.</small></span></div>
+        <div><ShieldCheck size={16}/><span><strong>Acesso autenticado</strong><small>Cadastro e sessão protegidos pelo autenticação do Firebase.</small></span></div>
         <div><LockKeyhole size={16}/><span><strong>Recuperação por e-mail</strong><small>Redefinição de senha sem precisar administrar SMTP próprio.</small></span></div>
       </div>
     </div>

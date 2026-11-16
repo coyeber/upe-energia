@@ -72,7 +72,7 @@ export default function LandingPage({onStart}){
 
           <div className="landing-pro-actions">
             <button className="landing-pro-primary" type="button" onClick={onStart}>
-              Vamos calcular <ArrowRight size={18}/>
+              Acessar painel <ArrowRight size={18}/>
             </button>
             <a className="landing-pro-secondary" href="#recursos">Conhecer recursos</a>
           </div>
@@ -90,12 +90,12 @@ export default function LandingPage({onStart}){
               <div className="landing-pro-mini-bolt"><Zap size={15} fill="currentColor"/></div>
               <div><strong>POLI Energia</strong><small>Visão geral</small></div>
             </div>
-            <span className="landing-pro-online"><i/> Análise online</span>
+            <span className="landing-pro-online"><i/> Análise disponível</span>
           </div>
 
           <div className="landing-pro-preview-body">
             <div className="landing-pro-preview-title">
-              <div><small>RESUMO ENERGÉTICO</small><strong>Indicadores principais</strong></div>
+              <div><small>RESUMO ENERGÉTICO</small><strong>Indicadores ilustrativos</strong></div>
               <span>2026</span>
             </div>
 
@@ -108,7 +108,7 @@ export default function LandingPage({onStart}){
               <article>
                 <span>Demanda contratada</span>
                 <strong>280 <em>kW</em></strong>
-                <small>Limite da unidade</small>
+                <small>Limite contratado ilustrativo</small>
               </article>
               <article>
                 <span>Demanda máx. Ponta</span>
@@ -203,7 +203,7 @@ export default function LandingPage({onStart}){
           <h2>Pronto para analisar a próxima fatura?</h2>
           <p>Entre no sistema e transforme os dados da conta em informação visual e organizada.</p>
         </div>
-        <button type="button" onClick={onStart}>Vamos calcular <ArrowRight size={18}/></button>
+        <button type="button" onClick={onStart}>Acessar painel <ArrowRight size={18}/></button>
       </div>
     </section>
 
@@ -215,7 +215,7 @@ export default function LandingPage({onStart}){
         </div>
         <div className="landing-pro-footer-meta">
           <span>Rua Prof. Benedito Monteiro, 455</span>
-          <span>A4 Livre Verde - Poder Público</span>
+          <span>A4 Livre Verde – Poder Público</span>
         </div>
       </div>
     </footer>

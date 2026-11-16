@@ -21,7 +21,7 @@ export default function UploadPage({onSaved}){
   try{
     let text=await extractPdfText(file,p=>setProgress(Math.max(6,Math.min(42,p*.42))))
     if(text.replace(/\s/g,'').length<180){
-      setState('ocr');setProgress(45);setMsg('O PDF possui pouco texto selecionável. Ativando OCR local...')
+      setState('ocr');setProgress(45);setMsg('O PDF possui pouco texto selecionável. Iniciando reconhecimento óptico de caracteres (OCR)...')
       text=await ocrPdf(file,p=>setProgress(45+Math.min(25,p*.25)))
     }
     if(text.replace(/\s/g,'').length<100) throw new Error('Não foi possível extrair texto suficiente desta conta.')
@@ -38,20 +38,20 @@ export default function UploadPage({onSaved}){
  const busy=['reading','ocr','ai','validating'].includes(state)
  return <div className="space-y-5 page-enter">
   <LoadingOverlay open={busy} stage={state} progress={progress} message={msg}/>
-  <section className="upload-hero animate-enter"><div className="hero-grid"/><div className="relative z-10"><div className="hero-kicker"><WandSparkles size={14}/>Nova análise detalhada</div><h1>Envie uma conta de energia</h1><p>O sistema extrai o texto do PDF, usa OCR quando necessário e organiza os dados energéticos e financeiros para o dashboard institucional.</p><div className="upload-trust"><span><ShieldCheck size={15}/>PDF original não é armazenado</span><span><CheckCircle2 size={15}/>kWh e kW separados</span><span><Sparkles size={15}/>Conferência antes de salvar</span></div></div></section>
+  <section className="upload-hero animate-enter"><div className="hero-grid"/><div className="relative z-10"><div className="hero-kicker"><WandSparkles size={14}/>Nova análise detalhada</div><h1>Envie uma conta de energia</h1><p>O sistema extrai o texto do PDF, utiliza reconhecimento óptico de caracteres (OCR) quando necessário e organiza os dados energéticos e financeiros para o painel institucional.</p><div className="upload-trust"><span><ShieldCheck size={15}/>PDF original não é armazenado</span><span><CheckCircle2 size={15}/>kWh e kW separados</span><span><Sparkles size={15}/>Conferência antes de salvar</span></div></div></section>
 
   {!result&&<section className="card upload-card animate-enter delay-1">
     <label className={`drop-zone ${file?'has-file':''}`}>
       <input type="file" accept="application/pdf" className="hidden" onChange={e=>{setFile(e.target.files?.[0]||null);setState('idle');setMsg('');setResult(null)}}/>
       <div className="drop-icon">{file?<FileText size={26}/>:<FileUp size={26}/>}</div>
       <div className="drop-title">{file?file.name:'Selecione ou arraste uma conta em PDF'}</div>
-      <div className="drop-subtitle">{file?`${(file.size/1024/1024).toFixed(2)} MB • pronto para análise`:'PDF nativo ou escaneado • OCR automático quando necessário'}</div>
+      <div className="drop-subtitle">{file?`${(file.size/1024/1024).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} MB • pronto para análise`:'PDF digital ou digitalizado • OCR automático quando necessário'}</div>
       {file&&<div className="file-ready"><CheckCircle2 size={15}/>Arquivo carregado</div>}
     </label>
 
-    {state==='error'&&<div className="error-panel"><div><ScanLine size={20}/></div><section><strong>Não foi possível concluir a análise</strong><p>{msg}</p><small>Se o erro vier do serviço de análise, verifique as variáveis de ambiente e faça um novo deploy no Vercel.</small></section></div>}
+    {state==='error'&&<div className="error-panel"><div><ScanLine size={20}/></div><section><strong>Não foi possível concluir a análise</strong><p>{msg}</p><small>Se o erro vier do serviço de análise, verifique as variáveis de ambiente e publique uma nova versão na Vercel.</small></section></div>}
 
-    <div className="upload-actions"><div className="upload-security"><ShieldCheck size={16}/><span>Apenas o texto extraído é enviado ao backend seguro do Vercel.</span></div><button className="btn-red btn-large" disabled={!file||busy} onClick={run}><Sparkles size={19}/>{busy?'Processando...':'Analisar conta'}</button></div>
+    <div className="upload-actions"><div className="upload-security"><ShieldCheck size={16}/><span>Apenas o texto extraído é enviado ao servidor de análise na Vercel.</span></div><button className="btn-red btn-large" disabled={!file||busy} onClick={run}><Sparkles size={19}/>{busy?'Processando...':'Analisar conta'}</button></div>
   </section>}
 
   {result&&<ReviewForm data={result} fileName={file?.name} provider={meta.provider} model={meta.model} onSave={onSaved}/>} 

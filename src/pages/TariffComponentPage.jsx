@@ -25,7 +25,7 @@ export default function TariffComponentPage({bills,onBack}){
   const totalPValue=sum(data.map(x=>x.pValue)),totalFPValue=sum(data.map(x=>x.fpValue))
   const formatPrice=v=>v==null?'':num(v,5)
   return <div className="space-y-5 page-enter">
-    <DetailHeader icon={ReceiptText} kicker="Análise tarifária" title="Uso do Sistema — NP e FP" subtitle="Quantidades, preços das tarifas e valores de fatura separados por posto, conforme os itens da conta." onBack={onBack}/>
+    <DetailHeader icon={ReceiptText} kicker="Análise tarifária" title="Uso do sistema de distribuição — NP e FP" subtitle="Quantidades, preços das tarifas e valores de fatura separados por posto, conforme os itens da conta." onBack={onBack}/>
     <YearSelector years={years.length?years:[year]} year={year} setYear={setYear}/>
     {!rows.length||!has?<EmptyDetail text="Ainda não existem dados de Uso Sistema Encar. NP/FP suficientes nas faturas cadastradas."/>:<>
       <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -36,7 +36,7 @@ export default function TariffComponentPage({bills,onBack}){
       </section>
       <section className="card premium-card p-5 md:p-6">
         <div className="label text-[#123b73]">Quantidades de uso do sistema</div>
-        <h2 className="section-title">Uso Sistema Encar. NP x FP — {year}</h2>
+        <h2 className="section-title">Uso do sistema por posto — NP e FP — {year}</h2>
         <p className="section-subtitle">Barras separadas em kWh, sem somar os postos na mesma série.</p>
         <div className="h-[350px] mt-5"><ResponsiveContainer><BarChart data={data}><CartesianGrid strokeDasharray="4 6" vertical={false}/><XAxis dataKey="label" height={48}/><YAxis width={74} label={{value:'kWh',angle:-90,position:'insideLeft'}}/><Tooltip contentStyle={tip} formatter={(v,nm)=>[`${num(v)} kWh`,nm]}/><Bar dataKey="pQty" name="Uso Sistema Encar. NP" fill="#ed1c2e" radius={[6,6,0,0]} maxBarSize={38}/><Bar dataKey="fpQty" name="Uso Sist. Encar. FP" fill="#123b73" radius={[6,6,0,0]} maxBarSize={38}/><Legend/></BarChart></ResponsiveContainer></div>
       </section>
@@ -48,7 +48,7 @@ export default function TariffComponentPage({bills,onBack}){
       </section>
       <section className="card premium-card p-5 md:p-6">
         <div className="label text-[#123b73]">Valores faturados</div>
-        <h2 className="section-title">Valor da fatura NP x FP</h2>
+        <h2 className="section-title">Valor da fatura NP e FP</h2>
         <p className="section-subtitle">Valores em reais de cada posto, conforme os itens discriminados.</p>
         <div className="h-[350px] mt-5"><ResponsiveContainer><BarChart data={data}><CartesianGrid strokeDasharray="4 6" vertical={false}/><XAxis dataKey="label" height={48}/><YAxis width={82} label={{value:'R$',angle:-90,position:'insideLeft'}}/><Tooltip contentStyle={tip} formatter={(v,nm)=>[brl(v),nm]}/><Bar dataKey="pValue" name="Valor da fatura NP" fill="#ed1c2e" radius={[6,6,0,0]} maxBarSize={38}/><Bar dataKey="fpValue" name="Valor da fatura FP" fill="#123b73" radius={[6,6,0,0]} maxBarSize={38}/><Legend/></BarChart></ResponsiveContainer></div>
       </section>

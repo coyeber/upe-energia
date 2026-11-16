@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_CONFIGURED } from '../lib/supabase'
 import { firebaseAuth } from '../lib/firebase'
-import { contractedDemandKw } from '../utils/analytics'
+import { resolveContract } from '../utils/demand'
 
 function clientForUser(userId){
  if(!SUPABASE_CONFIGURED||!supabase)throw new Error('Supabase não está configurado.')
@@ -23,7 +23,7 @@ export function asBill(row){
    concessionaria:row.concessionaria??bill.concessionaria,
    consumo_kwh:row.consumo_kwh??bill.consumo_kwh,
    valor_total:row.valor_total??bill.valor_total,
-   demanda_contratada_kw:row.demanda_contratada_kw??bill.demanda_contratada_kw}
+   demanda_contratada_kw:Object.prototype.hasOwnProperty.call(bill,'demanda_contratada_kw')?bill.demanda_contratada_kw:row.demanda_contratada_kw}
 }
 
 function recordFor(bill,userId,importKey=null){
@@ -38,7 +38,7 @@ function recordFor(bill,userId,importKey=null){
    concessionaria:bill.concessionaria||null,
    consumo_kwh:bill.consumo_kwh??null,
    valor_total:bill.valor_total??null,
-   demanda_contratada_kw:contractedDemandKw(bill),
+   demanda_contratada_kw:resolveContract(bill).needsReview?null:resolveContract(bill).value,
    demanda_maxima_ponta_kw:ponta?.demanda_maxima_kw??null,
    demanda_maxima_fora_ponta_kw:fp?.demanda_maxima_kw??null,
    dados:original

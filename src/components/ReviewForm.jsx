@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { CalendarDays, CheckCircle2, Gauge, Save, ShieldCheck, Sparkles, Zap, Clock3, ReceiptText } from 'lucide-react'
-import { makeId } from '../utils/format'
+import { makeId, num } from '../utils/format'
+import { resolveContract, contractSourceLabel } from '../utils/demand'
 
 const groups=[
  {title:'Identificação',fields:[['concessionaria','Concessionária','text'],['unidade_consumidora','Unidade consumidora','text']]},
  {title:'Período',fields:[['mes_referencia','Referência','month'],['data_vencimento','Vencimento','date'],['dias_faturados','Dias faturados','number']]},
- {title:'Dados principais',fields:[['consumo_kwh','Consumo total (kWh)','number'],['demanda_contratada_kw','Uso Sistema Fio — Demanda contratada (kW)','number'],['valor_total','Valor total da fatura (R$)','number']]},
+ {title:'Dados principais',fields:[['consumo_kwh','Consumo total (kWh)','number'],['demanda_contratada_kw','Demanda contratada (kW)','number'],['valor_total','Valor total da fatura (R$)','number']]},
  {title:'Cobranças adicionais',fields:[['iluminacao_publica_valor','Iluminação pública (R$)','number'],['impostos_total','Impostos (R$)','number'],['multas_total','Multas (R$)','number'],['demanda_ultrapassagem_valor','Ultrapassagem de demanda (R$)','number']]}
 ]
 const numberFields=new Set(['dias_faturados','consumo_kwh','demanda_contratada_kw','demanda_ultrapassagem_valor','valor_total','iluminacao_publica_valor','impostos_total','multas_total'])
@@ -18,11 +19,11 @@ const tariffFields=(post)=>[
 ]
 
 export default function ReviewForm({data,onSave,fileName,provider,model}){
- const [form,setForm]=useState({...data,demanda_contratada_kw:Number(data.demanda_contratada_kw)>0?data.demanda_contratada_kw:(Number(data.demanda_kw)>0?data.demanda_kw:null),tarifas_horarias:{ponta:{...(data.tarifas_horarias?.ponta||{})},fora_ponta:{...(data.tarifas_horarias?.fora_ponta||{})}}})
+ const [form,setForm]=useState({...data,demanda_contratada_kw:resolveContract(data).needsReview?null:resolveContract(data).value,demanda_contratada_fonte:resolveContract(data).needsReview?null:resolveContract(data).source,tarifas_horarias:{ponta:{...(data.tarifas_horarias?.ponta||{})},fora_ponta:{...(data.tarifas_horarias?.fora_ponta||{})}}})
  const [showDetails,setShowDetails]=useState(false)
  const [saving,setSaving]=useState(false)
  const [saveError,setSaveError]=useState('')
- const set=(k,v)=>setForm(s=>({...s,[k]:numberFields.has(k)?(v===''?null:Number(v)):v}))
+ const set=(k,v)=>setForm(s=>({...s,[k]:numberFields.has(k)?(v===''?null:Number(v)):v,...(k==='demanda_contratada_kw'?{demanda_contratada_fonte:'manual'}:{})}))
  const setTariff=(slot,k,v)=>setForm(s=>({...s,tarifas_horarias:{...s.tarifas_horarias,[slot]:{...(s.tarifas_horarias?.[slot]||{}),[k]:v===''?null:Number(v)}}}))
  async function save(){
   if(saving)return
@@ -36,7 +37,8 @@ export default function ReviewForm({data,onSave,fileName,provider,model}){
  }
  return <section className="card review-card animate-enter">
   <div className="review-head"><div><div className="label text-[#123b73]">Análise concluída</div><h2 className="section-title">Dados identificados automaticamente</h2><p className="section-subtitle">Você pode salvar imediatamente. A revisão detalhada é opcional e serve apenas para conferir o que foi lido na fatura.</p></div><span className="review-badge"><ShieldCheck size={15}/>Análise + validação</span></div>
-  <div className="review-summary"><Summary icon={Zap} label="Consumo" value={form.consumo_kwh!=null?`${form.consumo_kwh} kWh`:'Não identificado'}/><Summary icon={Gauge} label="Demanda máxima Ponta" value={form.tarifas_horarias?.ponta?.demanda_maxima_kw!=null?`${form.tarifas_horarias.ponta.demanda_maxima_kw} kW`:'Não informada'}/><Summary icon={Gauge} label="Demanda máxima FP" value={form.tarifas_horarias?.fora_ponta?.demanda_maxima_kw!=null?`${form.tarifas_horarias.fora_ponta.demanda_maxima_kw} kW`:'Não informada'}/><Summary icon={CalendarDays} label="Ciclo" value={form.dias_faturados!=null?`${form.dias_faturados} dias`:'A confirmar'}/></div>
+  <div className="review-summary"><Summary icon={Zap} label="Consumo" value={form.consumo_kwh!=null?`${num(form.consumo_kwh,2)} kWh`:'Não identificado'}/><Summary icon={Gauge} label="Demanda máxima na ponta" value={form.tarifas_horarias?.ponta?.demanda_maxima_kw!=null?`${num(form.tarifas_horarias.ponta.demanda_maxima_kw,2)} kW`:'Não informada'}/><Summary icon={Gauge} label="Demanda máxima fora de ponta" value={form.tarifas_horarias?.fora_ponta?.demanda_maxima_kw!=null?`${num(form.tarifas_horarias.fora_ponta.demanda_maxima_kw,2)} kW`:'Não informada'}/><Summary icon={CalendarDays} label="Ciclo" value={form.dias_faturados!=null?`${form.dias_faturados} dias`:'A confirmar'}/></div>
+  <div className="mt-4 rounded-xl border border-slate-200 p-3 text-sm"><strong>Demanda contratada: {form.demanda_contratada_kw==null?'não identificada':num(form.demanda_contratada_kw,2)+' kW'}</strong><p className="mt-1 text-slate-600">{contractSourceLabel(form.demanda_contratada_fonte)}{resolveContract(data).billed!=null?' • Uso Sistema Fio faturado: '+num(resolveContract(data).billed,2)+' kW.':''}</p>{form.demanda_contratada_kw==null&&<button type="button" className="btn-secondary mt-2" onClick={()=>setShowDetails(true)}>Conferir demanda contratada</button>}</div>
   <div className="review-auto-actions mt-5"><button className="btn-secondary" type="button" onClick={()=>setShowDetails(v=>!v)}><ReceiptText size={16}/>{showDetails?'Ocultar campos detalhados':'Revisar campos extraídos (opcional)'}</button><span>O preenchimento manual não é obrigatório para salvar.</span></div>
   {showDetails&&<>
   <div className="space-y-5 mt-6">{groups.map(g=><div key={g.title}><div className="review-group-title">{g.title}</div><div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-3">{g.fields.map(([k,l,t])=><label key={k} className="field-label">{l}<input className="field mt-1.5" type={t} step="any" value={form[k]??''} onChange={e=>set(k,e.target.value)}/></label>)}</div></div>)}</div>
@@ -47,7 +49,7 @@ export default function ReviewForm({data,onSave,fileName,provider,model}){
   </div>
 
   <div className="grid lg:grid-cols-3 gap-4 mt-6"><MetaCard title="Confiabilidade da leitura" text={`${form.confianca?.geral||'não informada'} • ${(form.confianca?.observacoes||[]).join(' ')||'Sem observações.'}`}/><MetaCard title="Componentes da fatura" text={`${form.componentes_fatura?.length||0} item(ns) identificado(s) na análise.`}/><MetaCard title="Cobranças específicas" text={`${form.multas?.length||0} multa(s) • ${form.impostos?.length||0} imposto(s) • iluminação pública ${form.iluminacao_publica_valor!=null?'identificada':'não identificada'}.`}/></div>
-  <div className="review-warning"><CheckCircle2 size={17}/><div><strong>Revisão simplificada</strong><p>Uso Sistema Fio corresponde à demanda contratada. NP e FP são separados: quantidade do uso do sistema (kWh), preço da tarifa (R$/kWh) e valor da fatura (R$). Demandas máximas medidas permanecem independentes em cada posto.</p></div></div>
+  <div className="review-warning"><CheckCircle2 size={17}/><div><strong>Revisão simplificada</strong><p>Uso Sistema Fio indica a demanda faturada. Confirme o limite contratado na fatura ou no contrato; não use a máxima medida como contrato. NP e FP são separados: quantidade do uso do sistema (kWh), preço da tarifa (R$/kWh) e valor da fatura (R$). Demandas máximas medidas permanecem independentes em cada posto.</p></div></div>
   </>}
   {saveError&&<div role="alert" className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold p-4">{saveError}</div>}
   <div className="mt-6 flex justify-end"><button type="button" className="btn-primary btn-large" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando no Supabase...':'Salvar análise no Supabase'}</button></div>

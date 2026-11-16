@@ -489,3 +489,11 @@
 
 /* CLERK EMBEDDED AUTH */
 .clerk-auth-component{margin-top:18px;width:100%}.clerk-auth-component .cl-rootBox,.clerk-auth-component .cl-cardBox,.clerk-auth-component .cl-card{width:100%;max-width:none}.clerk-auth-wrap .auth2-note{margin-top:18px}@media(max-width:620px){.clerk-auth-component{margin-top:14px}}
+
+/* Relatório: decoração atrás do conteúdo, sem obstrução ou corte em telas pequenas. */
+.report-hero{isolation:isolate;min-width:0}
+.report-hero>div,.report-hero>.btn-secondary{position:relative;z-index:2;min-width:0}
+.report-hero::after{z-index:0;background:transparent!important;pointer-events:none}
+.report-hero::before{z-index:0;pointer-events:none}
+.report-hero h1,.report-hero p,.report-kpi span,.report-kpi strong{overflow-wrap:anywhere;white-space:normal}
+@media(max-width:767px){.report-hero::after{display:none!important}.report-hero::before{display:none!important}.report-hero{padding:22px 18px;gap:16px}.report-hero>.btn-secondary{width:100%;white-space:normal;justify-content:center}.report-hero h1{font-size:clamp(1.35rem,5.4vw,1.65rem);line-height:1.2}.report-kpi strong{font-size:clamp(1.2rem,5.1vw,1.55rem)}}
