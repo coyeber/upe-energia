@@ -32,7 +32,7 @@ export default function ReviewForm({data,onSave,fileName,provider,model}){
    const {demanda_kw,...clean}=form
    await onSave({...clean,id:makeId(),uploaded_at:new Date().toISOString(),source_file:fileName,status_extracao:'sucesso',provider,model})
   }catch(error){
-   setSaveError(error?.message||'Falha ao salvar a conta no Supabase.')
+   setSaveError(error?.message||'Falha ao salvar a conta no banco de dados.')
   }finally{setSaving(false)}
  }
  return <section className="card review-card animate-enter">
@@ -52,7 +52,7 @@ export default function ReviewForm({data,onSave,fileName,provider,model}){
   <div className="review-warning"><CheckCircle2 size={17}/><div><strong>Revisão simplificada</strong><p>Uso Sistema Fio indica a demanda faturada. Confirme o limite contratado na fatura ou no contrato; não use a máxima medida como contrato. NP e FP são separados: quantidade do uso do sistema (kWh), preço da tarifa (R$/kWh) e valor da fatura (R$). Demandas máximas medidas permanecem independentes em cada posto.</p></div></div>
   </>}
   {saveError&&<div role="alert" className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold p-4">{saveError}</div>}
-  <div className="mt-6 flex justify-end"><button type="button" className="btn-primary btn-large" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando no Supabase...':'Salvar análise no Supabase'}</button></div>
+  <div className="mt-6 flex justify-end"><button type="button" className="btn-primary btn-large" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando no banco de dados...':'Salvar análise no banco de dados'}</button></div>
  </section>
 }
 function TariffEditor({post,title,subtitle,icon:Icon,data={},onChange}){return <div className="tariff-review-card"><div className="tariff-review-head"><div className="tariff-review-icon"><Icon size={18}/></div><div><strong>{title}</strong><span>{subtitle}</span></div></div><div className="grid sm:grid-cols-2 gap-3 mt-4">{tariffFields(post).map(([k,l])=><label className="field-label" key={k}>{l}<input className="field mt-1.5" type="number" step="any" value={data?.[k]??''} onChange={e=>onChange(k,e.target.value)}/></label>)}</div></div>}

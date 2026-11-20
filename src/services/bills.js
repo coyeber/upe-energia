@@ -1,19 +1,22 @@
-import { supabase, SUPABASE_CONFIGURED } from '../lib/supabase'
 import { firebaseAuth } from '../lib/firebase'
 import { resolveContract } from '../utils/demand'
 
-function clientForUser(userId){
- if(!SUPABASE_CONFIGURED||!supabase)throw new Error('Supabase não está configurado.')
- if(!firebaseAuth.currentUser||firebaseAuth.currentUser.uid!==userId)throw new Error('A sessão mudou. Entre novamente para continuar.')
- return supabase
-}
-
-function readableError(error){
- if(!error)return 'Erro desconhecido do banco de dados.'
- if(error.code==='42501'||error.code==='PGRST301'||error.status===401||error.status===403)
-  return 'O Firebase ainda não foi conectado ao Supabase. Ative Firebase em Authentication → Third-Party Auth, usando o projeto poli-energia. Caso esteja ativo, confira as permissões da sessão.'
- if(error.code==='23505')return 'Esta fatura já foi importada para este usuário.'
- return error.message||'Não foi possível comunicar com o banco.'
+async function request(userId,method='GET',payload){
+ const user=firebaseAuth.currentUser
+ if(!user||user.uid!==userId)throw new Error('A sessão mudou. Entre novamente para continuar.')
+ const token=await user.getIdToken()
+ if(firebaseAuth.currentUser?.uid!==userId)throw new Error('A sessão mudou. Entre novamente para continuar.')
+ const response=await fetch('/api/bills',{
+  method,cache:'no-store',headers:{Authorization:'Bearer '+token,...(payload?{'Content-Type':'application/json'}:{})},
+  ...(payload?{body:JSON.stringify(payload)}:{})
+ })
+ const result=await response.json().catch(()=>({}))
+ if(!response.ok){
+  const error=new Error(result.error||'Não foi possível comunicar com o banco.')
+  error.code=result.code
+  throw error
+ }
+ return result
 }
 
 export function asBill(row){
@@ -21,9 +24,9 @@ export function asBill(row){
  return {...bill,id:row.id,mes_referencia:row.mes_referencia??bill.mes_referencia,
    unidade_consumidora:row.unidade_consumidora??bill.unidade_consumidora,
    concessionaria:row.concessionaria??bill.concessionaria,
-   consumo_kwh:row.consumo_kwh??bill.consumo_kwh,
-   valor_total:row.valor_total??bill.valor_total,
-   demanda_contratada_kw:Object.prototype.hasOwnProperty.call(bill,'demanda_contratada_kw')?bill.demanda_contratada_kw:row.demanda_contratada_kw}
+   consumo_kwh:row.consumo_kwh==null?bill.consumo_kwh:Number(row.consumo_kwh),
+   valor_total:row.valor_total==null?bill.valor_total:Number(row.valor_total),
+   demanda_contratada_kw:Object.prototype.hasOwnProperty.call(bill,'demanda_contratada_kw')?bill.demanda_contratada_kw:row.demanda_contratada_kw==null?null:Number(row.demanda_contratada_kw)}
 }
 
 function recordFor(bill,userId,importKey=null){
@@ -46,48 +49,27 @@ function recordFor(bill,userId,importKey=null){
 }
 
 export async function loadUserBills(userId){
- const db=clientForUser(userId)
- const {data,error}=await db.from('contas_energia')
-   .select('id,mes_referencia,unidade_consumidora,concessionaria,consumo_kwh,valor_total,demanda_contratada_kw,dados,client_import_key,created_at')
-   .eq('firebase_user_id',userId)
-   .order('created_at',{ascending:false})
- if(error)throw new Error(readableError(error))
- return {bills:(data||[]).map(asBill),importKeys:new Set((data||[]).map(row=>row.client_import_key).filter(Boolean))}
+ const {rows}=await request(userId)
+ return {bills:rows.map(asBill),importKeys:new Set(rows.map(row=>row.client_import_key).filter(Boolean))}
 }
-
 export async function saveUserBill(userId,bill){
- const db=clientForUser(userId)
- const payload=recordFor(bill,userId)
- // A criação usa um UUID gerado pelo banco. Não dependemos de IDs locais legados.
- const {data,error}=await db.from('contas_energia').insert(payload)
-   .select('id,mes_referencia,unidade_consumidora,concessionaria,consumo_kwh,valor_total,demanda_contratada_kw,dados')
-   .single()
- if(error)throw new Error(readableError(error))
- return asBill(data)
+ const {row}=await request(userId,'POST',recordFor(bill,userId))
+ return asBill(row)
 }
-
 export async function deleteUserBill(userId,id){
- const db=clientForUser(userId)
- const {data,error}=await db.from('contas_energia').delete()
-  .eq('firebase_user_id',userId).eq('id',id).select('id')
- if(error)throw new Error(readableError(error))
- if(!data?.length)throw new Error('A conta não foi encontrada no seu usuário.')
+ await request(userId,'DELETE',{id})
 }
-
 export async function importLocalBills(userId,legacyBills=[],alreadyImported=new Set()){
- const db=clientForUser(userId)
  let imported=0,skipped=0
  for(let i=0;i<legacyBills.length;i++){
   const bill=legacyBills[i]
   const key=String(bill.id||bill.uploaded_at||`sem-id-${i}`)
   if(alreadyImported.has(key)){skipped++;continue}
-  const payload=recordFor(bill,userId,key)
-  const {error}=await db.from('contas_energia').insert(payload)
-  if(error){
-    if(error.code==='23505'){skipped++;continue}
-    throw new Error(`Importadas ${imported} conta(s) antes da falha. ${readableError(error)}`)
+  try{await request(userId,'POST',recordFor(bill,userId,key));imported++}
+  catch(error){
+   if(error.code==='23505'){skipped++;continue}
+   throw new Error(`Importadas ${imported} conta(s) antes da falha. ${error.message}`)
   }
-  imported++
  }
  return {imported,skipped}
 }

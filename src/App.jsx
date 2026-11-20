@@ -18,7 +18,6 @@ import EmailActionPage from './pages/EmailActionPage'
 import { useAuth } from './auth/AuthContext'
 import { getBills } from './data/storage'
 import { loadUserBills, saveUserBill, deleteUserBill, importLocalBills } from './services/bills'
-import { SUPABASE_CONFIGURED } from './lib/supabase'
 import { firebaseAuth } from './lib/firebase'
 import { checkAnalysisService } from './services/analysisService'
 
@@ -69,7 +68,7 @@ export default function App(){
  }
  async function del(id){
    if(!user?.id)return
-   if(!confirm('Excluir esta conta do Supabase? Ela será removida apenas do seu usuário.'))return
+   if(!confirm('Excluir esta conta do banco de dados? Ela será removida apenas do seu usuário.'))return
    setBillsBusy(true);setBillsError('')
    try{
      await deleteUserBill(user.id,id)
@@ -101,7 +100,6 @@ export default function App(){
  if(billsError&&!bills.length)return <div className="auth-session-loading"><div className="auth-session-logo"><Zap size={30}/></div><strong>Não foi possível carregar suas faturas</strong><span>{billsError}</span><div className="flex flex-wrap justify-center gap-3 mt-6"><button className="btn-primary" onClick={()=>setReloadIndex(v=>v+1)}>Tentar novamente</button><button className="btn-secondary" onClick={async()=>{await signOut();setEntryStage('access')}}>Sair</button></div></div>
  return <div className="min-h-screen app-shell"><ElectricBackdrop/>
   <header className="topbar"><div className="topbar-energy-flow"/><div className="topbar-inner"><div className="topbar-brand"><div className="brand-bolt"><Zap size={20} fill="currentColor"/></div><img src="/upe-logo.png" alt="Universidade de Pernambuco"/><span/><div className="brand-copy"><strong>POLI Energia</strong><small>Escola Politécnica de Pernambuco</small><div className="topbar-identification"><em><MapPin size={11}/>Rua Prof. Benedito Monteiro, 455</em><em><Building2 size={11}/>A4 Livre Verde – Poder Público</em></div></div></div><div className="topbar-actions"><span className="live-energy"><i/><Activity size={13}/> Monitoramento ativo</span><ServiceStatus status={status}/><span className="top-count"><Wifi size={14}/>{bills.length} conta{bills.length===1?'':'s'}</span>{authEnabled&&user&&<div className="account-chip"><UserRound size={15}/><span>{user.email}</span><button type="button" onClick={async()=>{await signOut();setPreviewAccess(false);setEntryStage('access')}} title="Sair do sistema" aria-label="Sair do sistema"><LogOut size={15}/></button></div>}</div></div><div className="topbar-red"/></header>
-  {!SUPABASE_CONFIGURED&&<div className="system-alert"><div><ShieldCheck size={16}/>Banco Supabase indisponível. O salvamento está desativado.</div></div>}
   {billsError&&<div className="system-alert"><div><ShieldCheck size={16}/>{billsError}</div></div>}
   {pendingLegacy.length>0&&<div className="mx-auto max-w-[1500px] px-6 pt-4"><div className="rounded-2xl border border-amber-200 bg-amber-50 text-amber-950 p-4 flex flex-wrap items-center justify-between gap-3"><div><strong>{pendingLegacy.length} conta(s) deste navegador ainda não estão no seu usuário</strong><p className="text-sm mt-1">Estes dados locais não são exibidos no painel. Importe somente se forem seus. Nenhuma conta local será apagada.</p></div><button type="button" className="btn-secondary" disabled={billsBusy} onClick={importLegacy}>{billsBusy?'Importando...':'Importar para minha conta'}</button></div></div>}
   {status==='error'&&<div className="system-alert"><div><ShieldCheck size={16}/>{health?.apiKeyConfigured===false?'Configure o serviço de análise no Vercel para ativar o processamento.':'Não foi possível verificar o serviço de análise agora.'}</div></div>}
