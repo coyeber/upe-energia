@@ -1,12 +1,8 @@
-const projectId='poli-energia'
+import { verifyFirebaseToken } from './firebase-verify.js'
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 async function verify(token){
- if(process.env.FIREBASE_AUTH_EMULATOR_HOST)throw new Error('Emulador não permitido')
- const {initializeApp,getApps,getApp}=await import('firebase-admin/app')
- const {getAuth}=await import('firebase-admin/auth')
- const app=getApps().length?getApp():initializeApp({projectId})
- return getAuth(app).verifyIdToken(token)
+ return verifyFirebaseToken(token)
 }
 
 async function defaultSql(){
