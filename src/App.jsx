@@ -30,6 +30,7 @@ export default function App(){
  const [billsLoading,setBillsLoading]=useState(true)
  const [loadedUserId,setLoadedUserId]=useState(null)
  const [billsError,setBillsError]=useState('')
+ const [loadError,setLoadError]=useState('')
  const [billsBusy,setBillsBusy]=useState(false)
  const [reloadIndex,setReloadIndex]=useState(0)
  const [importKeys,setImportKeys]=useState(new Set())
@@ -38,6 +39,7 @@ export default function App(){
  useEffect(()=>{const min=new Promise(r=>setTimeout(r,2100));const healthReq=checkAnalysisService().then(h=>{setHealth(h);setStatus(h.apiKeyConfigured?'ready':'error')}).catch(()=>setStatus('error'));Promise.allSettled([min,healthReq]).then(()=>setBoot(false))},[])
  useEffect(()=>{
    let cancelled=false
+   setLoadError('')
    if(!user?.id){
      setBills([]);setImportKeys(new Set());setLoadedUserId(null);setBillsLoading(false);setBillsError('')
      return ()=>{cancelled=true}
@@ -48,7 +50,7 @@ export default function App(){
      setBills(rows);setImportKeys(keys);setLoadedUserId(user.id);setBillsLoading(false)
    }).catch(error=>{
      if(cancelled)return
-     setBills([]);setBillsError(error.message);setLoadedUserId(user.id);setBillsLoading(false)
+     setBills([]);setLoadError(error.message);setLoadedUserId(user.id);setBillsLoading(false)
    })
    return ()=>{cancelled=true}
  },[user?.id,reloadIndex])
@@ -60,6 +62,7 @@ export default function App(){
      if(user.id===firebaseAuth.currentUser?.uid)
        setBills(current=>[savedBill,...current.filter(x=>x.id!==savedBill.id)])
      setPage('dashboard')
+     if(loadError)setReloadIndex(v=>v+1)
      return savedBill
    }catch(error){
      setBillsError(error.message)
@@ -97,13 +100,14 @@ export default function App(){
  if(!authEnabled&&!previewAccess)return <LoginPage previewMode onBack={()=>setEntryStage('landing')} onPreviewContinue={()=>setPreviewAccess(true)}/>
  if(boot)return <BootScreen/>
  if(billsLoading||loadedUserId!==user?.id)return <AuthLoadingScreen/>
- if(billsError&&!bills.length)return <div className="auth-session-loading"><div className="auth-session-logo"><Zap size={30}/></div><strong>Não foi possível carregar suas faturas</strong><span>{billsError}</span><div className="flex flex-wrap justify-center gap-3 mt-6"><button className="btn-primary" onClick={()=>setReloadIndex(v=>v+1)}>Tentar novamente</button><button className="btn-secondary" onClick={async()=>{await signOut();setEntryStage('access')}}>Sair</button></div></div>
+
  return <div className="min-h-screen app-shell"><ElectricBackdrop/>
-  <header className="topbar"><div className="topbar-energy-flow"/><div className="topbar-inner"><div className="topbar-brand"><div className="brand-bolt"><Zap size={20} fill="currentColor"/></div><img src="/upe-logo.png" alt="Universidade de Pernambuco"/><span/><div className="brand-copy"><strong>POLI Energia</strong><small>Escola Politécnica de Pernambuco</small><div className="topbar-identification"><em><MapPin size={11}/>Rua Prof. Benedito Monteiro, 455</em><em><Building2 size={11}/>A4 Livre Verde – Poder Público</em></div></div></div><div className="topbar-actions"><span className="live-energy"><i/><Activity size={13}/> Monitoramento ativo</span><ServiceStatus status={status}/><span className="top-count"><Wifi size={14}/>{bills.length} conta{bills.length===1?'':'s'}</span>{authEnabled&&user&&<div className="account-chip"><UserRound size={15}/><span>{user.email}</span><button type="button" onClick={async()=>{await signOut();setPreviewAccess(false);setEntryStage('access')}} title="Sair do sistema" aria-label="Sair do sistema"><LogOut size={15}/></button></div>}</div></div><div className="topbar-red"/></header>
+  <header className="topbar"><div className="topbar-energy-flow"/><div className="topbar-inner"><div className="topbar-brand"><div className="brand-bolt"><Zap size={20} fill="currentColor"/></div><img src="/upe-logo.png" alt="Universidade de Pernambuco"/><span/><div className="brand-copy"><strong>POLI Energia</strong><small>Escola Politécnica de Pernambuco</small><div className="topbar-identification"><em><MapPin size={11}/>Rua Prof. Benedito Monteiro, 455</em><em><Building2 size={11}/>A4 Livre Verde – Poder Público</em></div></div></div><div className="topbar-actions"><span className="live-energy"><i/><Activity size={13}/> Monitoramento ativo</span><ServiceStatus status={status}/><span className="top-count"><Wifi size={14}/>{loadError?'Dados indisponíveis':`${bills.length} conta${bills.length===1?'':'s'}`}</span>{authEnabled&&user&&<div className="account-chip"><UserRound size={15}/><span>{user.email}</span><button type="button" onClick={async()=>{await signOut();setPreviewAccess(false);setEntryStage('access')}} title="Sair do sistema" aria-label="Sair do sistema"><LogOut size={15}/></button></div>}</div></div><div className="topbar-red"/></header>
+  {loadError&&page==='upload'&&<div className="system-alert"><div><ShieldCheck size={16}/>Histórico indisponível: {loadError} O salvamento só será confirmado se o servidor responder com sucesso.</div></div>}
   {billsError&&<div className="system-alert"><div><ShieldCheck size={16}/>{billsError}</div></div>}
-  {pendingLegacy.length>0&&<div className="mx-auto max-w-[1500px] px-6 pt-4"><div className="rounded-2xl border border-amber-200 bg-amber-50 text-amber-950 p-4 flex flex-wrap items-center justify-between gap-3"><div><strong>{pendingLegacy.length} conta(s) deste navegador ainda não estão no seu usuário</strong><p className="text-sm mt-1">Estes dados locais não são exibidos no painel. Importe somente se forem seus. Nenhuma conta local será apagada.</p></div><button type="button" className="btn-secondary" disabled={billsBusy} onClick={importLegacy}>{billsBusy?'Importando...':'Importar para minha conta'}</button></div></div>}
+  {!loadError&&pendingLegacy.length>0&&<div className="mx-auto max-w-[1500px] px-6 pt-4"><div className="rounded-2xl border border-amber-200 bg-amber-50 text-amber-950 p-4 flex flex-wrap items-center justify-between gap-3"><div><strong>{pendingLegacy.length} conta(s) deste navegador ainda não estão no seu usuário</strong><p className="text-sm mt-1">Estes dados locais não são exibidos no painel. Importe somente se forem seus. Nenhuma conta local será apagada.</p></div><button type="button" className="btn-secondary" disabled={billsBusy} onClick={importLegacy}>{billsBusy?'Importando...':'Importar para minha conta'}</button></div></div>}
   {status==='error'&&<div className="system-alert"><div><ShieldCheck size={16}/>{health?.apiKeyConfigured===false?'Configure o serviço de análise no Vercel para ativar o processamento.':'Não foi possível verificar o serviço de análise agora.'}</div></div>}
-  <main className="main-layout"><Sidebar page={page} setPage={setPage} count={bills.length}/><section key={page} className="min-w-0 flex-1 page-switch">{page==='dashboard'&&<DashboardPage bills={bills} onAdd={()=>setPage('upload')} onNavigate={setPage}/>} {page==='consumption'&&<ConsumptionPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='demand'&&<DemandPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='tusd'&&<TUSDPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='upload'&&<UploadPage onSaved={saved} saving={billsBusy}/>} {page==='analysis'&&<AnalysisPage bills={bills}/>} {page==='report'&&<ReportPage bills={bills}/>} {page==='history'&&<HistoryPage bills={bills} onDelete={del} deleting={billsBusy}/>}</section></main>
+  <main className="main-layout"><Sidebar page={page} setPage={setPage} count={loadError?null:bills.length}/><section key={page} className="min-w-0 flex-1 page-switch">{loadError&&page!=='upload'?<div className="rounded-2xl border border-amber-200 bg-amber-50 text-amber-950 p-6" role="alert"><strong>Não foi possível consultar suas faturas</strong><p className="mt-2">{loadError}</p><p className="mt-2 text-sm">Os dados não foram apagados. Os indicadores ficam indisponíveis até recuperar a conexão.</p><button type="button" className="btn-secondary mt-4" onClick={()=>setReloadIndex(v=>v+1)}>Tentar novamente</button></div>:<>{page==='dashboard'&&<DashboardPage bills={bills} onAdd={()=>setPage('upload')} onNavigate={setPage}/>} {page==='consumption'&&<ConsumptionPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='demand'&&<DemandPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='tusd'&&<TUSDPage bills={bills} onBack={()=>setPage('dashboard')}/>} {page==='upload'&&<UploadPage onSaved={saved} saving={billsBusy}/>} {page==='analysis'&&<AnalysisPage bills={bills}/>} {page==='report'&&<ReportPage bills={bills}/>} {page==='history'&&<HistoryPage bills={bills} onDelete={del} deleting={billsBusy}/>}</>}</section></main>
   <footer className="site-footer"><div><span>POLI Energia • Gestão e análise de consumo elétrico</span><span>Processamento no servidor • PDF original não é armazenado</span></div></footer>
  </div>
 }

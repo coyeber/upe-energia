@@ -4,15 +4,18 @@ import { resolveContract } from '../utils/demand'
 async function request(userId,method='GET',payload){
  const user=firebaseAuth.currentUser
  if(!user||user.uid!==userId)throw new Error('A sessão mudou. Entre novamente para continuar.')
- const token=await user.getIdToken()
+ let token
+ try{token=await user.getIdToken()}catch(error){throw new Error('Firebase: não foi possível obter o token da sessão ('+(error?.code||'erro de rede')+'). Entre novamente.')}
  if(firebaseAuth.currentUser?.uid!==userId)throw new Error('A sessão mudou. Entre novamente para continuar.')
- const response=await fetch('/api/bills',{
+ let response
+ try{response=await fetch('/api/bills',{
   method,cache:'no-store',headers:{Authorization:'Bearer '+token,...(payload?{'Content-Type':'application/json'}:{})},
   ...(payload?{body:JSON.stringify(payload)}:{})
- })
- const result=await response.json().catch(()=>({}))
+ })}catch{throw new Error('Neon API: falha de rede ao acessar /api/bills. Verifique sua conexão e o domínio da implantação.')}
+ let result
+ try{result=await response.json()}catch{throw new Error('Neon API: resposta inválida (HTTP '+response.status+'). Verifique se a rota /api/bills está publicada.')}
  if(!response.ok){
-  const error=new Error(result.error||'Não foi possível comunicar com o banco.')
+  const error=new Error('Neon API (HTTP '+response.status+'): '+(result.error||'Não foi possível comunicar com o banco.'))
   error.code=result.code
   throw error
  }
@@ -50,6 +53,7 @@ function recordFor(bill,userId,importKey=null){
 
 export async function loadUserBills(userId){
  const {rows}=await request(userId)
+ if(!Array.isArray(rows))throw new Error('Neon API: resposta sem lista de faturas.')
  return {bills:rows.map(asBill),importKeys:new Set(rows.map(row=>row.client_import_key).filter(Boolean))}
 }
 export async function saveUserBill(userId,bill){
