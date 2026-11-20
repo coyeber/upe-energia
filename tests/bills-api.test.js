@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createHandler } from '../api/bills.js'
+import { createHandler } from '../server/bills-handler.js'
 
 async function run(method,body,auth='Bearer token',rows=[]){
  const calls=[]
@@ -25,4 +25,19 @@ test('delete requires ownership and returns not found for other records',async()
  const id='12345678-1234-1234-1234-123456789abc'
  const {res,calls}=await run('DELETE',{id,firebase_user_id:'other'})
  assert.equal(res.code,404);assert.match(calls[0].query,/AND firebase_user_id=/);assert.deepEqual(calls[0].params,[id,'owner'])
+})
+
+test('database initialization errors are returned as JSON',async()=>{
+ const handler=createHandler({verifyToken:async()=>({uid:'owner'}),getSql:async()=>{throw Object.assign(new Error('missing'),{code:'DATABASE_URL_MISSING'})}})
+ const res={code:0,setHeader(){},status(code){this.code=code;return this},json(data){this.data=data;return this}}
+ await handler({method:'GET',headers:{authorization:'Bearer token'}},res)
+ assert.equal(res.code,503)
+ assert.equal(res.data.code,'DATABASE_URL_MISSING')
+})
+test('public endpoint rejects unauthenticated requests without initializing SDKs',async()=>{
+ const {default:route}=await import('../api/bills.js')
+ const res={code:0,setHeader(){},status(code){this.code=code;return this},json(data){this.data=data;return this}}
+ await route({method:'GET',headers:{}},res)
+ assert.equal(res.code,401)
+ assert.equal(res.data.code,'AUTH_REQUIRED')
 })
